@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AstUtils.fs" />
+    <Compile Include="Plugins.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Fable.AST" Version="3.0.0" />
+  </ItemGroup>
+</Project>
