@@ -1,95 +1,54 @@
 module TodoMVC
 
+open System
 open Fable.Core
-// open Browser.Types
-// open Browser
+open Browser
 
-[<StringEnum>]
-type WhatIsVisible =
-   | All
-   | Active
-   | Completed
-
-// MODEL
 type Entry =
     { description : string
       completed : bool
-      editing : bool
-      id : int }
+      id : Guid }
 
-// The full application state of our todo app.
 type Model =
-    { entries : Entry[]
-      uid : int
-      visibility : WhatIsVisible }
+    { entries : Entry[] }
 
-let emptyModel () =
-    { entries = [||]
-      visibility = All
-      uid = 0 }
+type Msg =
+    | Add of text: string
+    | Delete of id: Guid
+    | Check of id: Guid * completed: bool
 
-let newEntry desc id =
+let newEntry desc =
   { description = desc
     completed = false
-    editing = false
-    id = id }
+    id = Guid.NewGuid() }
 
-// UPDATE
+let loadModel() =
+  let todos =
+    match localStorage.getItem("svelte-todos") with
+    | null | "" -> [||]
+    | json -> JS.JSON.parse(json) :?> Entry[]
+  { entries = todos }
 
-(** Users of our app can trigger messages by clicking and typing. These
-messages are fed into the `update` function as they occur, letting us react
-to them.
-*)
-type Msg =
-    | Edit of id: int * isEditing: bool
-    | Update of id: int * text: string
-    | Add of text: string
-    | Delete of id: int
-    | DeleteComplete
-    | Check of id: int * completed: bool
-    | CheckAll of completed: bool
-    | ChangeVisibility of visibility: WhatIsVisible
+let saveModel (model: Model) =
+  localStorage.setItem("svelte-todos", JS.JSON.stringify(model.entries))
+  model
 
-// How we update our Model on a given Msg?
 let update (msg:Msg) (model:Model) =
     match msg with
     | Add field ->
-        let xs = if System.String.IsNullOrEmpty field then
-                    model.entries
-                 else
-                    Array.append model.entries [|newEntry field model.uid|]
-        { model with
-            uid = model.uid + 1
-            entries = xs }
-
-    | Edit (id,isEditing) ->
-        let updateEntry t =
-          if t.id = id then { t with editing = isEditing } else t
-        { model with entries = Array.map updateEntry model.entries }
-
-    | Update (id,task) ->
-        let updateEntry t =
-          if t.id = id then { t with description = task; editing = false } else t
-        { model with entries = Array.map updateEntry model.entries }
+        let xs = if String.IsNullOrEmpty field then model.entries
+                 else Array.append model.entries [|newEntry field |]
+        { model with entries = xs } |> saveModel
 
     | Delete id ->
         { model with entries = Array.filter (fun t -> t.id <> id) model.entries }
-
-    | DeleteComplete ->
-        { model with entries = Array.filter (fun t -> not t.completed) model.entries }
+        |> saveModel
 
     | Check (id,isCompleted) ->
         let updateEntry t =
           if t.id = id then { t with completed = isCompleted } else t
         { model with entries = Array.map updateEntry model.entries }
+        |> saveModel
 
-    | CheckAll isCompleted ->
-        let updateEntry t = { t with completed = isCompleted }
-        { model with entries = Array.map updateEntry model.entries }
-
-    | ChangeVisibility visibility ->
-        { model with visibility = visibility }
-
-
-let store = emptyModel() |> Fable.Svelte.makeStore
+let store = Fable.Svelte.makeStore loadModel ignore
 let dispatch = Fable.Svelte.makeDispatcher update store

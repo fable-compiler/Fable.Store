@@ -17,15 +17,16 @@ type DispatcherAttribute() =
         match expr with
         | Fable.Call(_,info,_,_) ->
             match info.Args with
-            | [Fable.Lambda(msgArg, Fable.Lambda(_, Fable.Call(update,_,_,_), None), None); store] ->
-                match msgArg.Type with
-                | Fable.DeclaredType(msgEntityRef, msgGenArgs) ->                    
-                    let modelIdent = AstUtils.makeIdent "model"
-                    let storeUpdateGetterKind = Fable.ByKey(Fable.ExprKey(AstUtils.makeStrConst "update"))
-                    let storeUpdateGetter = Fable.Get(store, storeUpdateGetterKind, Fable.Any, None)
-                    
+            | [dispatch] ->
+                match dispatch.Type.Generics with
+                | Fable.DeclaredType(msgEntityRef, msgGenArgs)::_ ->
                     let lowerFirst (str: string) =
                         str.[0].ToString().ToLower() + str.[1..]
+
+                    let bindDispatch, dispatchRef =
+                        match dispatch with
+                        | Fable.IdentExpr ident -> false, ident
+                        | _ -> true, AstUtils.makeIdent "$dispatch"
 
                     let makeMember uciTag (uci: Fable.UnionCase) =
                         let outerArgs =
@@ -34,16 +35,17 @@ type DispatcherAttribute() =
 
                         let msgArgs = outerArgs |> List.map Fable.IdentExpr
                         let msg = Fable.Value(Fable.NewUnion(msgArgs, uciTag, msgEntityRef, msgGenArgs), None)
-                        
-                        let elmishUpdate = AstUtils.makeCall (Fable.TypeCast(update, Fable.Any, None)) [msg; Fable.IdentExpr modelIdent]
-                        let storeUpdate = AstUtils.makeCall storeUpdateGetter [Fable.Delegate([modelIdent], elmishUpdate, None)]
+                        let dispatchAction = AstUtils.makeCall (Fable.IdentExpr dispatchRef) [msg]
             
-                        lowerFirst uci.Name, Fable.Delegate(outerArgs, storeUpdate, None)
+                        lowerFirst uci.Name, Fable.Delegate(outerArgs, dispatchAction, None)
 
-                    helper.GetEntity(msgEntityRef).UnionCases
-                    |> List.mapi makeMember
-                    |> AstUtils.objExpr
+                    let dispatcher =
+                        helper.GetEntity(msgEntityRef).UnionCases
+                        |> List.mapi makeMember
+                        |> AstUtils.objExpr
 
+                    if bindDispatch then Fable.Let(dispatchRef, dispatch, dispatcher)
+                    else dispatcher
                 | _ -> fail()                
             | _ -> fail()
         | _ -> fail()
