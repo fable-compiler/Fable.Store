@@ -1,4 +1,4 @@
-module TodoMVC
+module App
 
 open System
 open Fable.Core
@@ -51,4 +51,4 @@ let update (msg:Msg) (model:Model) =
         |> saveModel
 
 let store = Fable.Svelte.makeStore loadModel ignore
-let dispatch = Fable.Svelte.makeDispatcher update store
+let dispatch = Fable.Svelte.makeDispatcher (fun msg -> store.update(update msg))

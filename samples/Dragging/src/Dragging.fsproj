@@ -3,10 +3,11 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Util.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Fable.Browser.WebStorage" Version="1.0.0" />
+    <PackageReference Include="Fable.Browser.Dom" Version="2.2.0" />
     <PackageReference Include="Fable.Core" Version="3.2.0" />
   </ItemGroup>
   <ItemGroup>

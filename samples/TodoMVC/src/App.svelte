@@ -1,5 +1,5 @@
 <script>
-	import { store, dispatch } from "./TodoMVC.fs.js";
+	import { store, dispatch } from "./App.fs.js";
 	import { quintOut } from "svelte/easing";
 	import { crossfade } from "svelte/transition";
 	import { flip } from "svelte/animate";

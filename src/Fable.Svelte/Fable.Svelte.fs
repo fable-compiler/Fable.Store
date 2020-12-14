@@ -33,7 +33,4 @@ let inline makeStore (init: unit->'Model) (dispose: unit->unit) =
         Dispose(fun () -> dispose()))
 
 [<SveltePlugins.Dispatcher>]
-let __makeDispatcher (dispatch: 'Msg -> unit): Dispatcher<'Msg> = failwith "never"
-
-let inline makeDispatcher (update: 'Msg -> 'Model -> 'Model) (updatable: Updatable<'Model>): Dispatcher<'Msg> =
-    __makeDispatcher (fun msg -> updatable.update(update msg))
+let makeDispatcher (dispatch: 'Msg -> unit): Dispatcher<'Msg> = failwith "never"
