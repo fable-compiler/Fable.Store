@@ -1,7 +1,10 @@
 <script>
-	import { store, dispatch } from "./App.fs.js";
+	// @ts-check
+	import { store, dispatch } from "./App";
 
+	/** @type SVGSVGElement */
 	let svg;
+
 	$: left = $store.position[0] - $store.offset[0];
 	$: top = $store.position[1] - $store.offset[1];
 </script>
