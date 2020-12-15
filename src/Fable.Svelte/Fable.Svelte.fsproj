@@ -5,7 +5,6 @@
   <PropertyGroup>
     <NpmDependencies>
       <NpmPackage Name="svelte" Version="&gt;= 3.31.0 &lt; 4.0.0" ResolutionStrategy="Max" />
-      <NpmPackage Name="svelte-adapter" Version="&gt;= 0.4.0 &lt; 1.0.0" ResolutionStrategy="Max" />
       <NpmPackage Name="svelte-loader" Version="&gt;= 2.13.6 &lt; 3.0.0" ResolutionStrategy="Max" DevDependency="true" />
     </NpmDependencies>
   </PropertyGroup>

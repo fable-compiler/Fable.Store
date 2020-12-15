@@ -5,14 +5,15 @@ open Feliz.Router
 open Feliz.Svelte
 
 [<SvelteComponent "./TodoMvc.svelte">]
-let TodoMvc() = Html.none
+let TodoMvc() = React.imported()
 
 [<SvelteComponent "./Dragging.svelte">]
-let Dragging() = Html.none
+let Dragging() = React.imported()
 
 [<ReactComponent>]
 let Index() = React.fragment [
     Html.h1 "Feliz ❤️ Svelte"
+    Html.p "Easily embed Svelte components inside Feliz applications"
     Html.ul [
         Html.li [
             Html.a [
