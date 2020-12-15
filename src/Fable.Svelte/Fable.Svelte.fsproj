@@ -2,14 +2,23 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
+  <PropertyGroup>
+    <NpmDependencies>
+      <NpmPackage Name="svelte" Version="&gt;= 3.31.0 &lt; 4.0.0" ResolutionStrategy="Max" />
+      <NpmPackage Name="svelte-adapter" Version="&gt;= 0.4.0 &lt; 1.0.0" ResolutionStrategy="Max" />
+      <NpmPackage Name="svelte-loader" Version="&gt;= 2.13.6 &lt; 3.0.0" ResolutionStrategy="Max" DevDependency="true" />
+    </NpmDependencies>
+  </PropertyGroup>
   <ItemGroup>
+    <Content Include="*.fsproj; *.fs; *.js;" PackagePath="fable\" />
     <Compile Include="Fable.Svelte.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Fable.AST" Version="3.0.0" />
-    <PackageReference Include="Fable.Core" Version="3.2.0" />
+    <PackageReference Include="Fable.Core" Version="3.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Fable.SveltePlugins\Fable.SveltePlugins.fsproj" />
+    <PackageReference Update="FSharp.Core" Version="4.7.2" />
   </ItemGroup>
 </Project>
