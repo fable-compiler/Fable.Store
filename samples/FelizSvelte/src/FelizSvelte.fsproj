@@ -5,6 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Feliz.Store.fs" />
+    <Compile Include="TimeFliesElmish.fs" />
     <Compile Include="Util.fs" />
     <Compile Include="Dragging.fs" />
     <Compile Include="TodoMvc.fs" />
