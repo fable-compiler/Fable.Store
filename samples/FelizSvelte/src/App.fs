@@ -28,6 +28,7 @@ let Index() = React.fragment [
             ]
         ]
     ]
+    TimeFliesElmish.TimeFliesElmish()
 ]
 
 [<ReactComponent>]
