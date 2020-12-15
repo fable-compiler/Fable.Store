@@ -17,7 +17,7 @@ type Model =
 
 type Msg = Letter of int * string * int * int
 
-let update (model: Model) (msg: Msg): Model =
+let update (msg: Msg) (model: Model): Model =
     let second =
         DateTimeOffset.Now.ToUnixTimeSeconds() |> float
 
@@ -45,47 +45,46 @@ let getOffset (element: Browser.Types.Element) =
 
     int (scrollTop - clientTop), int (scrollLeft - clientLeft)
 
-let stream (container: Browser.Types.Element) =
+let startStream (dispatch: Msg -> unit) (text: string) =
+    let container = document.body
     let top, left = getOffset container
 
-    asyncRx {
-        let chars =
-            Seq.toList "TIME FLIES LIKE AN ARROW"
-            |> Seq.mapi (fun i c -> i, c)
+    let msgObserver n =
+        async {
+            match n with
+            | OnNext msg -> dispatch msg
+            | OnError e -> JS.console.error (e)
+            | OnCompleted -> ()
+        }
 
-        let! i, c = AsyncRx.ofSeq chars
+    let stream =
+        asyncRx {
+            let chars =
+                Seq.toList text |> Seq.mapi (fun i c -> i, c)
 
-        yield!
-            AsyncRx.ofMouseMove ()
-            |> AsyncRx.delay (100 * i)
-            |> AsyncRx.requestAnimationFrame
-            |> AsyncRx.map (fun m -> Letter(i, string c, int m.clientX + i * 10 + 15 - left, int m.clientY - top))
-    }
+            let! i, c = AsyncRx.ofSeq chars
+
+            yield!
+                AsyncRx.ofMouseMove ()
+                |> AsyncRx.delay (100 * i)
+                |> AsyncRx.requestAnimationFrame
+                |> AsyncRx.map (fun m -> Letter(i, string c, int m.clientX + i * 10 + 15 - left, int m.clientY - top))
+        }
+
+    stream.SubscribeAsync(msgObserver)
 
 let store =
-    let mutable disp: IAsyncRxDisposable = Unchecked.defaultof<_>
-    let mutable store: Svelte.WritableStore<_> = Unchecked.defaultof<_>
+    let mutable disp = Unchecked.defaultof<_>
 
-    store <-
-        Svelte.makeStore
-            (fun () ->
-                async {
-                    let msgObserver n =
-                        async {
-                            match n with
-                            | OnNext msg -> store.update (fun model -> update model msg)
-                            | OnError e -> JS.console.error (e)
-                            | OnCompleted -> ()
-                        }
+    Svelte.makeStoreRec
+        (fun store ->
+            async {
+                let dispatch msg = store.update (update msg)
+                let! stream = startStream dispatch "TIME FLIES LIKE AN ARROW"
+                disp <- stream
+            }
+            |> Async.StartImmediate
 
-                    let msgs = stream document.body
-                    let! d = msgs.SubscribeAsync msgObserver
-                    disp <- d
-                }
-                |> Async.StartImmediate
+            initialModel)
 
-                initialModel)
-
-            (fun () -> disp.DisposeAsync() |> Async.StartImmediate)
-
-    store
+        (fun () -> disp.DisposeAsync() |> Async.StartImmediate)

@@ -16,6 +16,7 @@
   <ItemGroup>
     <PackageReference Include="Fable.AST" Version="3.0.0" />
     <PackageReference Include="Fable.Core" Version="3.0.0" />
+    <PackageReference Include="Fable.Promise" Version="2.1.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Fable.SveltePlugins\Fable.SveltePlugins.fsproj" />
