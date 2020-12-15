@@ -44,9 +44,10 @@ let rec waitingLoop () = async {
 }
 
 let store =
-    let tcs = new Threading.CancellationTokenSource()
+    let mutable tcs = Unchecked.defaultof<_>
     Fable.Svelte.makeStore
         (fun () ->
+            tcs <- new Threading.CancellationTokenSource()
             Async.StartImmediate(waitingLoop(), tcs.Token)
             { position=(0.,0.); offset=(0.,0.) })
         (fun () -> tcs.Cancel())
