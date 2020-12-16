@@ -108,3 +108,20 @@ let makeElmishStore
     store <- DispatchStore(init, dispose, dispatch)
 
     store
+
+let makeProjectedStore
+    (project: 'Model1 -> 'Model2)
+    (dispatch: 'Msg2 -> 'Msg1)
+    (store: DispatchStore<'Msg1, 'Model1>) =
+
+    let mutable _disp: IDisposable = Unchecked.defaultof<_>
+    let mutable projectedStore: DispatchStore<'Msg2, 'Model2> = Unchecked.defaultof<_>
+
+    let init() =
+        let model, disp = store.SubscribeImmediate(fun v ->
+            projectedStore.Update(fun _ -> project v))
+        _disp <- disp
+        project model
+
+    projectedStore <- DispatchStore(init, (fun _ -> _disp.Dispose()), dispatch >> store.Dispatch)
+    projectedStore
