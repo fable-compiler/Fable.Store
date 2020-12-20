@@ -1,6 +1,6 @@
 import { Readable } from "svelte/store";
 
-export const store: Readable<{
+export function store(txt: string): Readable<{
     letters: Iterable<[number, {
         char: string,
         x: number,

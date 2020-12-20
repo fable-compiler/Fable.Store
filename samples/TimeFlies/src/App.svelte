@@ -1,6 +1,8 @@
 <script>
 	// @ts-check
 	import { store } from "./App";
+	export let text;
+	let model = store(text)
 </script>
 
 <style>
@@ -14,8 +16,8 @@
 </style>
 
 <div class="reaction-app">
-	{#each [...$store.letters] as [idx, letter] (idx)}
+	{#each [...$model.letters] as [idx, letter] (idx)}
 		<span style="top:{letter.y}px; left:{letter.x}px">{letter.char}</span>
 	{/each}
-	<p>fps: {$store.fps}</p>
+	<p>fps: {$model.fps}</p>
 </div>

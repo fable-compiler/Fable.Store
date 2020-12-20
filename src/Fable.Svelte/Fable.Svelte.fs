@@ -27,6 +27,8 @@ type DispatchStore<'Msg, 'Model> =
     inherit WritableStore<'Model>
     inherit Dispatcher<'Msg>
 
+type Initialize<'Props, 'Model> = delegate of 'Props -> ReadableStore<'Model>
+
 [<Import("readable", from="svelte/store")>]
 let makeReadableStore (init: 'Model) (start: ('Model -> unit) -> Dispose): ReadableStore<'Model> = jsNative
 
@@ -38,12 +40,20 @@ let inline makeStore (init: unit->'Model) (dispose: unit->unit) =
         init() |> set
         Dispose(fun () -> dispose()))
 
-let makeStoreRec (init: WritableStore<'Model> -> 'Model) (dispose: unit->unit) =
-    let mutable store: WritableStore<_> = Unchecked.defaultof<_>
-    store <- makeWritableStore Unchecked.defaultof<_> (fun set ->
-        init store |> set
-        Dispose(fun () -> dispose()))
-    store
+let makeStoreRec (init: WritableStore<'Model> -> 'Props -> 'Model * IDisposable) =
+    let mutable _store: WritableStore<_> option = None
+    Initialize(fun props ->
+        match _store with
+        | Some store -> upcast store
+        | None ->
+            let store = makeWritableStore Unchecked.defaultof<_> (fun set ->
+                let model, disp = init _store.Value props
+                set model
+                Dispose(fun () ->
+                    _store <- None
+                    disp.Dispose()))
+            _store <- Some store
+            upcast store)
 
 let makeElmishStore
         (init: unit -> 'Model * Cmd<'Msg>)
