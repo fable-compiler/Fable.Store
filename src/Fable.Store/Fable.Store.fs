@@ -1,4 +1,5 @@
-module Fable.Store
+[<RequireQualifiedAccessAttribute>]
+module Store
 
 open System
 
@@ -102,10 +103,10 @@ type Store<'Model>(init: unit -> 'Model, dispose: 'Model -> unit) =
 
 type StoreCons<'Model, 'Store> = (unit -> 'Model) -> ('Model -> unit) -> 'Store * Update<'Model>
 
-let makeStoreWithCons (init: 'Props -> 'Model)
-                      (dispose: 'Model -> unit)
-                      (cons: StoreCons<'Model, 'Store>)
-                      : 'Props -> 'Store =
+let makeWithCons (init: 'Props -> 'Model)
+                 (dispose: 'Model -> unit)
+                 (cons: StoreCons<'Model, 'Store>)
+                 : 'Props -> 'Store =
 
     let mutable _store: 'Store option = None
 
@@ -121,12 +122,12 @@ let makeStoreWithCons (init: 'Props -> 'Model)
             _store <- Some(store)
             store
 
-let makeStore (init: 'Props -> 'Model) (dispose: 'Model -> unit): 'Props -> IStore<'Model> =
-    makeStoreWithCons init dispose (fun i d ->
+let make (init: 'Props -> 'Model) (dispose: 'Model -> unit): 'Props -> IStore<'Model> =
+    makeWithCons init dispose (fun i d ->
         let s = Store(i, d)
-        upcast s, s.Update)
+        upcast s, s.Update)   
 
-let makeStoreRecWithCons (init: IStore<'Model> -> 'Props -> 'Model * IDisposable)
+let makeRecWithCons (init: 'Store -> 'Props -> 'Model * IDisposable)
                          (cons: StoreCons<'Model, 'Store>)
                          : 'Props -> 'Store =
 
@@ -152,16 +153,16 @@ let makeStoreRecWithCons (init: IStore<'Model> -> 'Props -> 'Model * IDisposable
             _store <- Some(store)
             store
 
-let makeStoreRec (init: IStore<'Model> -> 'Props -> 'Model * IDisposable): 'Props -> IStore<'Model> =
-    makeStoreRecWithCons init (fun i d ->
+let makRec (init: IStore<'Model> -> 'Props -> 'Model * IDisposable): 'Props -> IStore<'Model> =
+    makeRecWithCons init (fun i d ->
         let s = Store(i, d)
         upcast s, s.Update)
 
-let makeElmishStoreWithCons (init: 'Props -> 'Model * Cmd<'Msg>)
-                            (update: 'Msg -> 'Model -> 'Model * Cmd<'Msg>)
-                            (dispose: 'Model -> unit)
-                            (cons: StoreCons<'Model, 'Store>)
-                            : 'Props -> 'Store * Dispatch<'Msg> =
+let makeElmishWithCons (init: 'Props -> 'Model * Cmd<'Msg>)
+                       (update: 'Msg -> 'Model -> 'Model * Cmd<'Msg>)
+                       (dispose: 'Model -> unit)
+                       (cons: StoreCons<'Model, 'Store>)
+                       : 'Props -> 'Store * Dispatch<'Msg> =
 
     let mutable _storeDispatch: ('Store * Dispatch<'Msg>) option = None
 
@@ -194,11 +195,11 @@ let makeElmishStoreWithCons (init: 'Props -> 'Model * Cmd<'Msg>)
             _storeDispatch <- Some(store, dispatch)
             store, dispatch
 
-let makeElmishStore (init: 'Props -> 'Model * Cmd<'Msg>)
-                    (update: 'Msg -> 'Model -> 'Model * Cmd<'Msg>)
-                    (dispose: 'Model -> unit)
-                    : 'Props -> IStore<'Model> * Dispatch<'Msg> =
+let makeElmish (init: 'Props -> 'Model * Cmd<'Msg>)
+               (update: 'Msg -> 'Model -> 'Model * Cmd<'Msg>)
+               (dispose: 'Model -> unit)
+               : 'Props -> IStore<'Model> * Dispatch<'Msg> =
 
-    makeElmishStoreWithCons init update dispose (fun i d ->
+    makeElmishWithCons init update dispose (fun i d ->
         let s = Store(i, d)
         upcast s, s.Update)
