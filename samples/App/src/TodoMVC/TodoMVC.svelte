@@ -1,4 +1,5 @@
 <script>
+	// @ts-check
 	import { makeStore } from "./TodoMVC";
 	import { quintOut } from "svelte/easing";
 	import { crossfade } from "svelte/transition";
@@ -7,7 +8,7 @@
 	const [store, dispatch] = makeStore();
 
 	const [send, receive] = crossfade({
-		fallback(node, params) {
+		fallback(node, _params) {
 			const style = getComputedStyle(node);
 			const transform = style.transform === "none" ? "" : style.transform;
 
@@ -94,8 +95,10 @@
 		placeholder="What needs to be done?"
 		on:keydown={(ev) => {
 			if (ev.key === 'Enter') {
-				dispatch.add(ev.target.value);
-				ev.target.value = '';
+				/** @type any */
+				const target = ev.target;
+				dispatch.add(target.value);
+				target.value = '';
 			}
 		}} />
 

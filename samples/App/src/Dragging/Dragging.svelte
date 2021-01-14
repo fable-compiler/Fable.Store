@@ -20,6 +20,7 @@
 		height="100"
 		style="fill:rgb(0, 255, 33)"
 		on:mousedown={(ev) => {
+			// @ts-ignore
 			const rect = ev.target.getBoundingClientRect();
 			dispatch.mouseDown(ev.x, ev.y, ev.x - rect.left, ev.y - rect.top);
 		}}
