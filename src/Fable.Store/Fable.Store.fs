@@ -3,14 +3,14 @@ module Store
 
 open System
 
-type Update<'Model> = ('Model -> 'Model) -> unit
+type Update<'Value> = ('Value -> 'Value) -> unit
 type Dispatch<'Msg> = 'Msg -> unit
 type Cmd<'Msg> = (Dispatch<'Msg> -> unit) list
 
-type IStore<'Model> =
-    inherit IObservable<'Model>
-    abstract Update: f:('Model -> 'Model) -> unit
-// abstract SubscribeImmediate: observer: IObserver<'Model> -> 'Model * IDisposable
+type IStore<'Value> =
+    inherit IObservable<'Value>
+    abstract Value: 'Value
+    abstract Update: f:('Value -> 'Value) -> unit
 
 module internal Helpers =
     type CmdHandler<'Msg>(handler, ?dispose) =
@@ -46,159 +46,88 @@ module internal Helpers =
         new CmdHandler<_>(List.iter (fun cmd -> cmd mb.Post), fun _ -> cts.Cancel())
 #endif
 
-type Store<'Model>(init: unit -> 'Model, dispose: 'Model -> unit) =
-    let mutable uid = 0
-    let mutable model = Unchecked.defaultof<_>
+type Store<'Value, 'Msg>(initValue: 'Value,  ?dispose: 'Value -> unit) =
+    let mutable _uid = 0
+    let mutable _value = initValue
 
     let subscribers =
-        Collections.Generic.Dictionary<_, IObserver<'Model>>()
+        Collections.Generic.Dictionary<_, IObserver<'Value>>()
 
-    member _.Update(f: 'Model -> 'Model) =
-        if subscribers.Count > 0 then
-            let newModel = f model
+    member _.Update(f: 'Value -> 'Value) =
+        let newValue = f _value
 
-            if not (Helpers.fastEquals model newModel) then
-                model <- newModel
+        if not (Helpers.fastEquals _value newValue) then
+            _value <- newValue
 
-                subscribers.Values
-                |> Seq.iter (fun s -> s.OnNext(model))
+            subscribers.Values
+            |> Seq.iter (fun s -> s.OnNext(_value))
 
-    member _.Subscribe(observer: IObserver<'Model>): IDisposable =
-        if subscribers.Count = 0 then model <- init ()
-        let id = uid
-        uid <- uid + 1
+    member _.Subscribe(observer: IObserver<'Value>): IDisposable =
+        let id = _uid
+        _uid <- _uid + 1
         subscribers.Add(id, observer)
 
         { new IDisposable with
             member _.Dispose() =
-                if subscribers.Remove(id) && subscribers.Count = 0 then
-                    dispose model
-                    model <- Unchecked.defaultof<_> }
+                if subscribers.Remove(id) then
+                    match subscribers.Count, dispose with
+                    | 0, Some dispose ->
+                        dispose _value
+                        _value <- initValue
+                    | _ -> () }
 
-    // member _.SubscribeImmediate(observer: IObserver<'Model>): 'Model * IDisposable =
-    //     if subscribers.Count = 0 then
-    //         model <- init()
-    //     let id = uid
-    //     uid <- uid + 1
-    //     subscribers.Add(id, observer)
-    //     let disposable =
-    //         { new IDisposable with
-    //             member _.Dispose() =
-    //                 if subscribers.Remove(id) && subscribers.Count = 0 then
-    //                     dispose model
-    //                     model <- Unchecked.defaultof<_> }
-    //     model, disposable
-
-    // member this.SubscribeImmediate(observer: 'Model -> unit): 'Model * IDisposable =
-    //     let observer =
-    //         { new IObserver<_> with
-    //             member _.OnNext(value) = observer value
-    //             member _.OnCompleted() = ()
-    //             member _.OnError(_error: exn) = () }
-    //     this.SubscribeImmediate(observer)
-
-    interface IStore<'Model> with
+    interface IStore<'Value> with
+        member _.Value = _value
         member this.Update(f) = this.Update(f)
-        member this.Subscribe(observer: IObserver<'Model>) = this.Subscribe(observer)
+        member this.Subscribe(observer: IObserver<'Value>) = this.Subscribe(observer)
 
-type StoreCons<'Model, 'Store> = (unit -> 'Model) -> ('Model -> unit) -> 'Store * Update<'Model>
+type StoreCons<'Value, 'Store> = 'Value -> ('Value -> unit) -> 'Store * Update<'Value>
 
-let makeWithCons (init: 'Props -> 'Model)
-                 (dispose: 'Model -> unit)
-                 (cons: StoreCons<'Model, 'Store>)
+let makeWithCons (init: 'Props -> 'Value)
+                 (dispose: 'Value -> unit)
+                 (cons: StoreCons<'Value, 'Store>)
                  : 'Props -> 'Store =
-
-    let mutable _store: 'Store option = None
-
     fun props ->
-        match _store with
-        | Some store -> store
-        | None ->
-            let dispose m =
-                _store <- None
-                dispose m
+        let value = init props
+        let store, _ = cons value dispose
+        store
 
-            let store, _ = cons (fun _ -> init props) dispose
-            _store <- Some(store)
-            store
-
-let make (init: 'Props -> 'Model) (dispose: 'Model -> unit): 'Props -> IStore<'Model> =
-    makeWithCons init dispose (fun i d ->
-        let s = Store(i, d)
+let make (init: 'Props -> 'Value) (dispose: 'Value -> unit): 'Props -> IStore<'Value> =
+    makeWithCons init dispose (fun v d ->
+        let s = Store(v, d)
         upcast s, s.Update)   
 
-let makeRecWithCons (init: 'Store -> 'Props -> 'Model * IDisposable)
-                         (cons: StoreCons<'Model, 'Store>)
-                         : 'Props -> 'Store =
-
-    let mutable _disp: IDisposable = null
-    let mutable _store: 'Store option = None
-
-    fun props ->
-        match _store with
-        | Some store -> store
-        | None ->
-            let dispose _ =
-                let d = _disp
-                _disp <- null
-                _store <- None
-                d.Dispose()
-
-            let init () =
-                let model, disp = init _store.Value props
-                _disp <- disp
-                model
-
-            let store, _ = cons init dispose
-            _store <- Some(store)
-            store
-
-let makRec (init: IStore<'Model> -> 'Props -> 'Model * IDisposable): 'Props -> IStore<'Model> =
-    makeRecWithCons init (fun i d ->
-        let s = Store(i, d)
-        upcast s, s.Update)
-
-let makeElmishWithCons (init: 'Props -> 'Model * Cmd<'Msg>)
-                       (update: 'Msg -> 'Model -> 'Model * Cmd<'Msg>)
-                       (dispose: 'Model -> unit)
-                       (cons: StoreCons<'Model, 'Store>)
+let makeElmishWithCons (init: 'Props -> 'Value * Cmd<'Msg>)
+                       (update: 'Msg -> 'Value -> 'Value * Cmd<'Msg>)
+                       (dispose: 'Value -> unit)
+                       (cons: StoreCons<'Value, 'Store>)
                        : 'Props -> 'Store * Dispatch<'Msg> =
-
-    let mutable _storeDispatch: ('Store * Dispatch<'Msg>) option = None
-
-    let mutable _cmdHandler =
-        Unchecked.defaultof<Helpers.CmdHandler<'Msg>>
-
     fun props ->
-        match _storeDispatch with
-        | Some storeDispatch -> storeDispatch
-        | None ->
-            let store, storeUpdate =
-                cons
-                    (fun () ->
-                        let m, cmd = init props
-                        _cmdHandler.Handle cmd
-                        m)
-                    (fun m ->
-                        _cmdHandler.Dispose()
-                        dispose m)
+        let mutable _cmdHandler = Unchecked.defaultof<Helpers.CmdHandler<'Msg>>
 
-            let dispatch msg =
-                let mutable _cmds = []
-                storeUpdate(fun model ->
-                    let model, cmds = update msg model
-                    _cmds <- cmds
-                    model)
-                _cmdHandler.Handle _cmds
+        let initValue, initCmd = init props
 
-            _cmdHandler <- Helpers.cmdHandler dispatch
-            _storeDispatch <- Some(store, dispatch)
-            store, dispatch
+        let store, storeUpdate = cons initValue (fun m ->
+            _cmdHandler.Dispose()
+            dispose m)
 
-let makeElmish (init: 'Props -> 'Model * Cmd<'Msg>)
-               (update: 'Msg -> 'Model -> 'Model * Cmd<'Msg>)
-               (dispose: 'Model -> unit)
-               : 'Props -> IStore<'Model> * Dispatch<'Msg> =
+        let dispatch msg =
+            let mutable _cmds = []
+            storeUpdate(fun model ->
+                let model, cmds = update msg model
+                _cmds <- cmds
+                model)
+            _cmdHandler.Handle _cmds
+
+        _cmdHandler <- Helpers.cmdHandler dispatch
+        _cmdHandler.Handle initCmd
+
+        store, dispatch
+
+let makeElmish (init: 'Props -> 'Value * Cmd<'Msg>)
+               (update: 'Msg -> 'Value -> 'Value * Cmd<'Msg>)
+               (dispose: 'Value -> unit)
+               : 'Props -> IStore<'Value> * Dispatch<'Msg> =
 
     makeElmishWithCons init update dispose (fun i d ->
         let s = Store(i, d)
