@@ -1,8 +1,8 @@
 <script>
 	// @ts-check
-	import { store } from "./TimeFlies";
+	import { makeStore } from "./TimeFlies";
 	export let text = "Time flies like an arrow";
-	let model = store(text)
+	let store = makeStore(text)
 </script>
 
 <style>
@@ -16,8 +16,8 @@
 </style>
 
 <div class="reaction-app">
-	{#each [...$model.letters] as [idx, letter] (idx)}
+	{#each [...$store.letters] as [idx, letter] (idx)}
 		<span style="top:{letter.y}px; left:{letter.x}px">{letter.char}</span>
 	{/each}
-	<p>fps: {$model.fps}</p>
+	<p>fps: {$store.fps}</p>
 </div>

@@ -14,11 +14,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="4.7.2" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Fable.Core" Version="3.1.6" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Fable.Store\Fable.Store.fsproj" />
+    <ProjectReference Include="..\Fable.SveltePlugins\Fable.SveltePlugins.fsproj" />
   </ItemGroup>
 </Project>

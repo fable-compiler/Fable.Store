@@ -86,49 +86,48 @@ type StoreCons<'Value, 'Store> = 'Value -> ('Value -> unit) -> 'Store * Update<'
 let makeWithCons (init: 'Props -> 'Value)
                  (dispose: 'Value -> unit)
                  (cons: StoreCons<'Value, 'Store>)
-                 : 'Props -> 'Store =
-    fun props ->
-        let value = init props
-        let store, _ = cons value dispose
-        store
+                 (props: 'Props): 'Store =
+    let value = init props
+    let store, _ = cons value dispose
+    store
 
-let make (init: 'Props -> 'Value) (dispose: 'Value -> unit): 'Props -> IStore<'Value> =
-    makeWithCons init dispose (fun v d ->
-        let s = Store(v, d)
-        upcast s, s.Update)   
+let private makeCons i d =
+    let s = Store(i, d)
+    s :> IStore<'Value>, s.Update
+
+let make (init: 'Props -> 'Value) (dispose: 'Value -> unit) (props: 'Props): IStore<'Value> =
+    makeWithCons init dispose makeCons props
 
 let makeElmishWithCons (init: 'Props -> 'Value * Cmd<'Msg>)
                        (update: 'Msg -> 'Value -> 'Value * Cmd<'Msg>)
                        (dispose: 'Value -> unit)
                        (cons: StoreCons<'Value, 'Store>)
-                       : 'Props -> 'Store * Dispatch<'Msg> =
-    fun props ->
-        let mutable _cmdHandler = Unchecked.defaultof<Helpers.CmdHandler<'Msg>>
+                       (props: 'Props): 'Store * Dispatch<'Msg> =
 
-        let initValue, initCmd = init props
+    let mutable _cmdHandler = Unchecked.defaultof<Helpers.CmdHandler<'Msg>>
 
-        let store, storeUpdate = cons initValue (fun m ->
-            _cmdHandler.Dispose()
-            dispose m)
+    let initValue, initCmd = init props
 
-        let dispatch msg =
-            let mutable _cmds = []
-            storeUpdate(fun model ->
-                let model, cmds = update msg model
-                _cmds <- cmds
-                model)
-            _cmdHandler.Handle _cmds
+    let store, storeUpdate = cons initValue (fun m ->
+        _cmdHandler.Dispose()
+        dispose m)
 
-        _cmdHandler <- Helpers.cmdHandler dispatch
-        _cmdHandler.Handle initCmd
+    let dispatch msg =
+        let mutable _cmds = []
+        storeUpdate(fun model ->
+            let model, cmds = update msg model
+            _cmds <- cmds
+            model)
+        _cmdHandler.Handle _cmds
 
-        store, dispatch
+    _cmdHandler <- Helpers.cmdHandler dispatch
+    _cmdHandler.Handle initCmd
+
+    store, dispatch
 
 let makeElmish (init: 'Props -> 'Value * Cmd<'Msg>)
                (update: 'Msg -> 'Value -> 'Value * Cmd<'Msg>)
                (dispose: 'Value -> unit)
-               : 'Props -> IStore<'Value> * Dispatch<'Msg> =
+               (props: 'Props): IStore<'Value> * Dispatch<'Msg> =
 
-    makeElmishWithCons init update dispose (fun i d ->
-        let s = Store(i, d)
-        upcast s, s.Update)
+    makeElmishWithCons init update dispose makeCons props

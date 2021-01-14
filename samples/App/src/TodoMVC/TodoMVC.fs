@@ -22,7 +22,7 @@ let newEntry desc =
     completed = false
     id = Guid.NewGuid() }
 
-let loadModel() =
+let init() =
   let todos =
     match localStorage.getItem("svelte-todos") with
     | null | "" -> [||]
@@ -50,5 +50,6 @@ let update (msg:Msg) (model:Model) =
         { model with entries = Array.map updateEntry model.entries }
         |> saveModel
 
-let store = Fable.Svelte.makeStore loadModel ignore
-let dispatch = Fable.Svelte.makeDispatcher (fun msg -> store.update(update msg))
+let makeStore () =
+  let store, dispatch = SvelteStore.makeElmishSimple init update ignore ()
+  store, SvelteStore.makeDispatcher dispatch

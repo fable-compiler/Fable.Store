@@ -1,8 +1,10 @@
 <script>
-	import { store, dispatch } from "./TodoMVC";
+	import { makeStore } from "./TodoMVC";
 	import { quintOut } from "svelte/easing";
 	import { crossfade } from "svelte/transition";
 	import { flip } from "svelte/animate";
+
+	const [store, dispatch] = makeStore();
 
 	const [send, receive] = crossfade({
 		fallback(node, params) {

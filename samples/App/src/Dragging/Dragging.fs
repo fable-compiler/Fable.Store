@@ -13,45 +13,44 @@ type Model =
     { position: float*float
       offset: float*float }
 
-let stream = SingleObservable()
-
-let rec draggingLoop () = async {
+let rec draggingLoop (stream: IObservable<_>) = async {
     let! msg, dispatch = Async.AwaitObservable(stream)
 
     match msg with
     | MouseMove(x, y) ->
         dispatch(fun model -> { model with position=(x, y) })
-        return! draggingLoop()
+        return! draggingLoop stream
 
     // If the left button is up, we don't do anything so we leave the dragging loop
     | MouseUp -> ()
     
     // Stay within the loop without changing the state
-    | _ -> return! draggingLoop()
+    | _ -> return! draggingLoop stream
 }
 
-let rec waitingLoop () = async {
+let rec waitingLoop (stream: IObservable<_>) = async {
     let! msg, dispatch = Async.AwaitObservable(stream)
 
     match msg with
     | MouseDown(x, y, offsetX, offsetY) ->
         dispatch(fun _ -> { position = (x, y)
                             offset = (offsetX, offsetY) })
-        do! draggingLoop()
+        do! draggingLoop stream
     | _ -> ()
 
-    return! waitingLoop()
+    return! waitingLoop stream
 }
 
-let store =
-    let mutable tcs = Unchecked.defaultof<_>
-    Fable.Svelte.makeStore
-        (fun () ->
-            tcs <- new Threading.CancellationTokenSource()
-            Async.StartImmediate(waitingLoop(), tcs.Token)
-            { position=(0.,50.); offset=(0.,0.) })
-        (fun () -> tcs.Cancel())
+let makeStore() =
+    let stream = SingleObservable()
+    let tcs = new Threading.CancellationTokenSource()
 
-let dispatch =
-    Fable.Svelte.makeDispatcher (fun msg ->
-        stream.Trigger(msg, store.update))
+    let init () =
+        Async.StartImmediate(waitingLoop stream, tcs.Token)
+        { position=(0.,50.); offset=(0.,0.) }
+
+    let dispose _ = tcs.Cancel()
+    let store = SvelteStore.make init dispose ()    
+    let dispatch msg = stream.Trigger(msg, store.update)
+
+    store, SvelteStore.makeDispatcher dispatch

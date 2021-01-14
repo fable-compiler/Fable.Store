@@ -1,7 +1,6 @@
 module TimeFlies
 
 open System
-open Fable
 open Fable.Reaction
 open FSharp.Control
 open Browser
@@ -65,9 +64,7 @@ let startStream (update: Model -> unit) (model: Model) =
         model
     |> Observable.subscribe update
 
-let store =
-    Svelte.makeStoreRec
-        (fun store txt ->
-            let update m = store.update (fun _ -> m)
-            let model = init txt
-            model, startStream update model)
+let makeStore = SvelteStore.makeRec <| fun store (txt: string) ->
+    let update m = store.update(fun _ -> m)
+    let v = init txt
+    v, startStream update v
