@@ -1,4 +1,4 @@
-module App
+module TimeFlies
 
 open System
 open Fable

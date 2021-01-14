@@ -1,6 +1,6 @@
 <script>
 	// @ts-check
-	import { store, dispatch } from "./App";
+	import { store, dispatch } from "./Dragging";
 
 	/** @type SVGSVGElement */
 	let svg;

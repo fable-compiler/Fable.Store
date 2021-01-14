@@ -1,4 +1,4 @@
-module App
+module TodoMVC
 
 open System
 open Fable.Core

@@ -1,4 +1,4 @@
-module App
+module Dragging
 
 open System
 open Fable.Core
@@ -49,7 +49,7 @@ let store =
         (fun () ->
             tcs <- new Threading.CancellationTokenSource()
             Async.StartImmediate(waitingLoop(), tcs.Token)
-            { position=(0.,0.); offset=(0.,0.) })
+            { position=(0.,50.); offset=(0.,0.) })
         (fun () -> tcs.Cancel())
 
 let dispatch =

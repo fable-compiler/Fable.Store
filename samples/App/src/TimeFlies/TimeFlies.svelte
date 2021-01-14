@@ -1,7 +1,7 @@
 <script>
 	// @ts-check
-	import { store } from "./App";
-	export let text;
+	import { store } from "./TimeFlies";
+	export let text = "Time flies like an arrow";
 	let model = store(text)
 </script>
 
