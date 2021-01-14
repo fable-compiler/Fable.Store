@@ -28,12 +28,12 @@ type Model =
       second: float
       count: int
       message: string
-      stream: IAsyncRxDisposable option }
+      stream: IDisposable option }
 
 type Msg =
     | Letter of index: int * char: char * x: int * y: int
     | Message of string
-    | Stream of IAsyncRxDisposable
+    | Stream of IDisposable
 
 let getOffset (element: Browser.Types.Element) =
     let doc = element.ownerDocument
@@ -45,43 +45,33 @@ let getOffset (element: Browser.Types.Element) =
 
     int (scrollTop - clientTop), int (scrollLeft - clientLeft)
 
-let startStream (previous: IAsyncRxDisposable option) (text: string) (dispatch: Msg -> unit) =
+let startStream (text: string) (dispatch: Msg -> unit) =
     let container = document.body
     let top, left = getOffset container
 
-    let msgObserver n =
-        async {
-            match n with
-            | OnNext msg -> dispatch msg
-            | OnError e -> JS.console.error (e)
-            | OnCompleted -> ()
-        }
+    asyncRx {
+        let chars =
+            Seq.toList text
+            |> Seq.mapi (fun i c -> i, c)
 
-    async {
-        match previous with
-        | Some d -> do! d.DisposeAsync()
-        | None -> ()
+        let! i, c = AsyncRx.ofSeq chars
 
-        return!
-            (asyncRx {
-                let chars =
-                    Seq.toList text |> Seq.mapi (fun i c -> i, c)
-
-                let! i, c = AsyncRx.ofSeq chars
-
-                yield!
-                    AsyncRx.ofMouseMove ()
-                    |> AsyncRx.delay (100 * i)
-                    |> AsyncRx.requestAnimationFrame
-                    |> AsyncRx.map (fun m -> Letter(i, c, int m.clientX + i * 10 + 15 - left, int m.clientY - top))
-             }).SubscribeAsync msgObserver
+        yield!
+            AsyncRx.ofMouseMove ()
+            |> AsyncRx.delay (100 * i)
+            |> AsyncRx.requestAnimationFrame
+            |> AsyncRx.map (fun m -> Letter(i, c, int m.clientX + i * 10 + 15 - left, int m.clientY - top))
     }
+    |> AsyncRx.toObservable
+    |> Observable.subscribe dispatch
+
+let disposeStream (model: Model) =
+    model.stream |> Option.iter (fun d -> d.Dispose())
 
 let update (msg: Msg) (model: Model) =
     match msg with
     | Letter (i, c, x, y) ->
-        let second =
-            DateTimeOffset.Now.ToUnixTimeSeconds() |> float
+        let second = DateTimeOffset.Now.ToUnixTimeSeconds() |> float
 
         { model with
               letters = Map.add i { char = c; x = x; y = y } model.letters
@@ -91,40 +81,32 @@ let update (msg: Msg) (model: Model) =
         []
 
     | Message txt ->
+        disposeStream model
+
         { model with
               letters = Map.empty
               message = txt },
-        Cmd.ofAsync
-            (fun dispatch ->
-                async {
-                    let! stream = startStream model.stream txt dispatch
-                    return Stream stream
-                })
+        [fun dispatch ->
+            startStream txt dispatch |> Stream |> dispatch]
 
     | Stream stream -> { model with stream = Some stream }, []
 
-let init () =
+let init msg =
     { letters = Map.empty
       count = 0
       second = 0.
       fps = 0
-      message = ""
+      message = msg
       stream = None },
-    Cmd.ofMsg (Message "TIME FLIES LIKE AN ARROW")
-
-let store =
-    Feliz.Store.makeElmishStore
-        init
-        update
-        (fun model ->
-            model.stream
-            |> Option.iter (fun d -> d.DisposeAsync() |> Async.StartImmediate))
+    Cmd.ofMsg (Message msg)
 
 open Feliz
 
 [<ReactComponent>]
-let TimeFliesElmish() =
-    let model, dispatch = Store.useDispatchStore store
+let TimeFliesElmish (text: string) =
+    let model, dispatch =
+        ReactStore.useElmishStore init update disposeStream text
+
     Html.div [
         prop.style [
             style.fontFamily "Consolas, monospace"

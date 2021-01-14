@@ -4,7 +4,7 @@ open Feliz
 open Feliz.Router
 open Feliz.Svelte
 
-[<SvelteComponent "./TodoMvc.svelte">]
+[<SvelteComponent "./TodoMVC.svelte">]
 let TodoMvc() = React.imported()
 
 [<SvelteComponent "./Dragging.svelte">]
@@ -29,7 +29,7 @@ let Index() = React.fragment [
             ]
         ]
     ]
-    TimeFliesElmish.TimeFliesElmish()
+    TimeFliesElmish.TimeFliesElmish "Time flies, hurry up!"
 ]
 
 [<ReactComponent>]
