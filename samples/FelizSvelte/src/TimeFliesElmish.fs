@@ -125,7 +125,7 @@ let TimeFliesElmish (text: string) =
             Html.input [
                 prop.style [ style.width 300 ]
                 prop.defaultValue model.message
-                prop.onBlur (fun ev ->
+                prop.onChange (fun (ev: Types.Event) ->
                     Message (ev.target :?> Types.HTMLInputElement).value |> dispatch)
             ]
             Html.p ("fps: " + string model.fps)
