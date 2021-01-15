@@ -18,32 +18,37 @@ let private useEffect(f: unit -> Dispose, deps: obj[]): unit = jsNative
 [<ImportMember("react")>]
 let private useRef(v: 'Value): ReactRef<'Value> = jsNative
 
-// Don't remove the lambda here because Fable may try to uncurry the function
-let inline private makeDispose (d: IDisposable) =
-    Dispose(fun () -> d.Dispose())
 
-let useObservable (initValue: 'Value) (obs: IObservable<'Value>) =
-    let state, setState = useState(fun () -> initValue)
+let inline private useStateWithDisposable (f) =
+    let _disp = useRef Unchecked.defaultof<IDisposable>
+    let _setState = useRef Unchecked.defaultof<('Value -> unit) option>
+
+    let state, setState = useState(fun () ->
+        let initState, disp = f _setState
+        _disp.current <- disp
+        initState)
 
     useEffect((fun () ->
-        let disp = obs.Subscribe(setState)
-        makeDispose disp), [||])
+        _setState.current <- Some setState
+        Dispose(fun () ->
+            _setState.current <- None
+            _disp.current.Dispose()
+        )), [||])
 
     state
 
-let useStore (store: Store.IReadStore<'Value>) =
-    useObservable store.Value store
+let useObservable (obs: IObservable<'Value>) =
+    useStateWithDisposable (fun setState ->
+        obs |> Store.subscribeImmediate(fun v ->
+            setState.current |> Option.iter (fun f -> f v)))
 
 let useStoreLazy (init: unit -> Store.IStore<'Value>): 'Value * Store.Update<'Value> =
     let _store = useRef Unchecked.defaultof<_>
 
-    let state, setState = useState(fun () ->
+    let state = useStateWithDisposable (fun setState ->
         _store.current <- init()
-        _store.current.Value)
-
-    useEffect((fun () ->
-        let disp = _store.current.Subscribe(setState)
-        makeDispose disp), [||])
+        _store.current |> Store.subscribeImmediate(fun v ->
+            setState.current |> Option.iter (fun f -> f v)))
 
     state, fun f -> _store.current.Update(f)
 
@@ -57,18 +62,13 @@ let useElmishStore (init: 'Props -> 'Value * Store.Cmd<'Msg>)
                    (dispose: 'Value -> unit)
                    (props: 'Props): 'Value * Store.Dispatch<'Msg> =
 
-    let _store = useRef Unchecked.defaultof<_>
     let _dispatch = useRef Unchecked.defaultof<_>
 
-    let state, setState = useState(fun () ->
+    let state = useStateWithDisposable (fun setState ->
         let store, dispatch = Store.makeElmish init update dispose props
-        _store.current <- store
         _dispatch.current <- dispatch
-        store.Value)
-
-    useEffect((fun () ->
-        let disp = _store.current.Subscribe(setState)
-        makeDispose disp), [||])
+        store |> Store.subscribeImmediate(fun v ->
+            setState.current |> Option.iter (fun f -> f v)))
 
     state, fun msg -> _dispatch.current msg 
 

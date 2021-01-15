@@ -55,12 +55,9 @@ let makeElmishSimple (init: 'Props -> 'Value)
                      (dispose: 'Value -> unit)
                      (props: 'Props): IWritableStore<'Value> * Store.Dispatch<'Msg> =
 
-    Store.makeElmishWithCons
-        (fun p -> init p, [])
-        (fun msg model -> update msg model, [])
-        dispose
-        storeCons
-        props
+    let init p = init p, []
+    let update m v = update m v, []
+    makeElmish init update dispose props
 
 [<Fable.SveltePlugins.Dispatcher>]
 let makeDispatcher (dispatch: 'Msg -> unit): obj = failwith "never"

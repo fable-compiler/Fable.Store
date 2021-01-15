@@ -7,12 +7,9 @@ type Update<'Value> = ('Value -> 'Value) -> unit
 type Dispatch<'Msg> = 'Msg -> unit
 type Cmd<'Msg> = (Dispatch<'Msg> -> unit) list
 
-type IReadStore<'Value> =
-    inherit IObservable<'Value>
-    abstract Value: 'Value
-
 type IStore<'Value> =
-    inherit IReadStore<'Value>
+    inherit IDisposable
+    inherit IObservable<'Value>
     abstract Update: f:('Value -> 'Value) -> unit
 
 module internal Helpers =
@@ -52,69 +49,45 @@ module internal Helpers =
 type Store<'Value>(initValue: 'Value,  ?dispose: 'Value -> unit) =
     let mutable _uid = 0
     let mutable _value = initValue
+    let subscribers = Collections.Generic.Dictionary<_, IObserver<'Value>>()
 
-    let subscribers =
-        Collections.Generic.Dictionary<_, IObserver<'Value>>()
+    member _.Dispose() =
+        subscribers.Clear()
+        match dispose with Some d -> d _value | None -> ()
 
     member _.Update(f: 'Value -> 'Value) =
-        let newValue = f _value
+        _value <- f _value
+        subscribers.Values
+        |> Seq.iter (fun s -> s.OnNext(_value))
 
-        if not (Helpers.fastEquals _value newValue) then
-            _value <- newValue
-
-            subscribers.Values
-            |> Seq.iter (fun s -> s.OnNext(_value))
-
-    member _.Subscribe(observer: IObserver<'Value>): IDisposable =
-        let id = _uid
-        _uid <- _uid + 1
-        subscribers.Add(id, observer)
-
-        { new IDisposable with
-            member _.Dispose() =
-                if subscribers.Remove(id) then
-                    match subscribers.Count, dispose with
-                    | 0, Some dispose ->
-                        dispose _value
-                        _value <- initValue
-                    | _ -> () }
-
-    interface IStore<'Value> with
-        member _.Value = _value
-        member this.Update(f) = this.Update(f)
-        member this.Subscribe(observer: IObserver<'Value>) = this.Subscribe(observer)
-
-type MappedStore<'a, 'b>(store: IReadStore<'a>, map: 'a -> 'b) =
-    let mutable _uid = 0
-    let mutable _value = map store.Value
-    let mutable _disp: IDisposable = Unchecked.defaultof<_>
-    let subscribers = Collections.Generic.Dictionary<_, IObserver<'b>>()
-
-    member _.Subscribe(observer: IObserver<'b>): IDisposable =        
-        if subscribers.Count = 0 then
-            _disp <- store.Subscribe(fun v ->
-                let newValue = map v
-
-                if not (Helpers.fastEquals _value newValue) then
-                    _value <- newValue
-
-                    subscribers.Values
-                    |> Seq.iter (fun s -> s.OnNext(_value))
-            )
+    member this.Subscribe(observer: IObserver<'Value>): IDisposable =
+        // Immediately report current value
+        observer.OnNext(_value)
 
         let id = _uid
         _uid <- _uid + 1
         subscribers.Add(id, observer)
-       
+
         { new IDisposable with
             member _.Dispose() =
                 if subscribers.Remove(id) && subscribers.Count = 0 then
-                    _disp.Dispose()
-                    _disp <- Unchecked.defaultof<_> }
+                    this.Dispose() }
 
-    interface IReadStore<'b> with
-        member _.Value = _value
-        member this.Subscribe(observer) = this.Subscribe(observer)
+    interface IStore<'Value> with
+        member this.Dispose() = this.Dispose()
+        member this.Update(f) = this.Update(f)
+        member this.Subscribe(observer: IObserver<'Value>) = this.Subscribe(observer)
+
+let subscribeImmediate (cb: 'Value -> unit) (obs: IObservable<'Value>) =
+    let mutable initValue = None
+    let disp = obs.Subscribe(fun v ->
+        match initValue with
+        | None -> initValue <- Some v
+        | Some _ -> cb v)
+    
+    match initValue with
+    | None -> failwith "Observable doesn't report value immediately upon subscription"
+    | Some v -> v, disp
 
 type StoreCons<'Value, 'Store> = 'Value -> ('Value -> unit) -> 'Store * Update<'Value>
 
@@ -127,7 +100,7 @@ let makeWithCons (init: 'Props -> 'Value)
     store
 
 let private makeCons i d =
-    let s = Store(i, d)
+    let s = new Store<_>(i, d)
     s :> IStore<'Value>, s.Update
 
 let make (init: 'Props -> 'Value) (dispose: 'Value -> unit) (props: 'Props): IStore<'Value> =
@@ -166,6 +139,3 @@ let makeElmish (init: 'Props -> 'Value * Cmd<'Msg>)
                (props: 'Props): IStore<'Value> * Dispatch<'Msg> =
 
     makeElmishWithCons init update dispose makeCons props
-
-let map (f: 'a -> 'b) (store: IReadStore<'a>): IReadStore<'b> =
-    MappedStore(store, f) :> _
