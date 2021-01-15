@@ -64,3 +64,9 @@ let makeElmishSimple (init: 'Props -> 'Value)
 
 [<Fable.SveltePlugins.Dispatcher>]
 let makeDispatcher (dispatch: 'Msg -> unit): obj = failwith "never"
+
+let map (f: 'a -> 'b) (store: IReadableStore<'a>): IReadableStore<'b> =
+    makeReadableStore Unchecked.defaultof<_> (fun set ->
+        let disp = store.subscribe(f >> set)
+        Dispose(fun () -> disp.Invoke()))
+        
