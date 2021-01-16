@@ -52,12 +52,7 @@ let useStoreLazy (init: unit -> Store.IStore<'Value>): 'Value * Store.Update<'Va
 
     state, fun f -> _store.current.Update(f)
 
-// Inline to avoid problems locating react package in the sample
-#if DEBUG
-let inline useElmishStore (init: 'Props -> 'Value * Store.Cmd<'Msg>)
-#else
 let useElmishStore (init: 'Props -> 'Value * Store.Cmd<'Msg>)
-#endif
                    (update: 'Msg -> 'Value -> 'Value * Store.Cmd<'Msg>)
                    (dispose: 'Value -> unit)
                    (props: 'Props): 'Value * Store.Dispatch<'Msg> =
