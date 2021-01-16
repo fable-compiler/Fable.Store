@@ -48,12 +48,14 @@ module internal Helpers =
 
 type Store<'Value>(initValue: 'Value,  ?dispose: 'Value -> unit) =
     let mutable _uid = 0
+    let mutable _disposed = false
     let mutable _value = initValue
     let subscribers = Collections.Generic.Dictionary<_, IObserver<'Value>>()
 
     member _.Dispose() =
-        subscribers.Clear()
-        match dispose with Some d -> d _value | None -> ()
+        if not _disposed then
+            subscribers.Clear()
+            match dispose with Some d -> d _value | None -> ()
 
     member _.Update(f: 'Value -> 'Value) =
         _value <- f _value
@@ -61,17 +63,20 @@ type Store<'Value>(initValue: 'Value,  ?dispose: 'Value -> unit) =
         |> Seq.iter (fun s -> s.OnNext(_value))
 
     member this.Subscribe(observer: IObserver<'Value>): IDisposable =
-        // Immediately report current value
-        observer.OnNext(_value)
+        if _disposed then
+            failwith "The store has already been disposed"
+        else
+            // Immediately report current value
+            observer.OnNext(_value)
 
-        let id = _uid
-        _uid <- _uid + 1
-        subscribers.Add(id, observer)
+            let id = _uid
+            _uid <- _uid + 1
+            subscribers.Add(id, observer)
 
-        { new IDisposable with
-            member _.Dispose() =
-                if subscribers.Remove(id) && subscribers.Count = 0 then
-                    this.Dispose() }
+            { new IDisposable with
+                member _.Dispose() =
+                    if subscribers.Remove(id) && subscribers.Count = 0 then
+                        this.Dispose() }
 
     interface IStore<'Value> with
         member this.Dispose() = this.Dispose()
