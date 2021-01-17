@@ -104,6 +104,8 @@ export function makeStore(): [Readable<{
 }]
 ```
 
+> At the moment, the declaration has to be written by hand, but in the future we may look at generating it automatically with a plugin.
+
 With this, you can use Typescript in your .svelte file or just the `// @ts-check` declaration to get type checking even in Javascript! Please note that in this case, for Typescript to correctly pick the declaration, you need to omit the extension from the import path.
 
 ```js
