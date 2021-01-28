@@ -31,7 +31,7 @@ let private storeCons value dispose =
             model)))
     store, store.update
 
-let make init dispose props: IWritableStore<'Model> =    
+let make init dispose props: IWritableStore<'Model> =
     Store.makeWithCons init dispose storeCons props
 
 let makeRec (init: IWritableStore<'Model> -> 'Props -> 'Model * IDisposable) =
@@ -43,8 +43,8 @@ let makeRec (init: IWritableStore<'Model> -> 'Props -> 'Model * IDisposable) =
             Dispose(fun () -> disp.Dispose()))
         store
 
-let makeElmish (init: 'Props -> 'Value * Store.Cmd<'Msg>)
-               (update: 'Msg -> 'Value -> 'Value * Store.Cmd<'Msg>)
+let makeElmish (init: 'Props -> 'Value * Store.Cmd<'Value, 'Msg>)
+               (update: 'Msg -> 'Value -> 'Value * Store.Cmd<'Value, 'Msg>)
                (dispose: 'Value -> unit)
                (props: 'Props): IWritableStore<'Value> * Store.Dispatch<'Msg> =
 
@@ -66,4 +66,3 @@ let map (f: 'a -> 'b) (store: IReadableStore<'a>): IReadableStore<'b> =
     makeReadableStore Unchecked.defaultof<_> (fun set ->
         let disp = store.subscribe(f >> set)
         Dispose(fun () -> disp.Invoke()))
-        

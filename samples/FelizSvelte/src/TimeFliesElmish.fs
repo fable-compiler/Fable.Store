@@ -8,12 +8,12 @@ open FSharp.Control
 open Browser
 
 module Cmd =
-    type Cmd<'Msg> = (('Msg -> unit) -> unit) list
+    type Cmd<'Value, 'Msg> = Store.Cmd<'Value, 'Msg>
 
-    let ofMsg msg: Cmd<'Msg> = [ fun d -> d msg ]
+    let ofMsg msg: Cmd<'Value, 'Msg> = [ fun (_, d) -> d msg ]
 
-    let ofAsync (action: _ -> Async<'Msg>): Cmd<'Msg> =
-        [ fun dispatch ->
+    let ofAsync (action: _ -> Async<'Msg>): Cmd<'Value, 'Msg> =
+        [ fun (_, dispatch) ->
             async {
                 let! msg = action dispatch
                 dispatch msg
@@ -33,7 +33,6 @@ type Model =
 type Msg =
     | Letter of index: int * char: char * x: int * y: int
     | Message of string
-    | Stream of IDisposable
 
 let getOffset (element: Browser.Types.Element) =
     let doc = element.ownerDocument
@@ -86,10 +85,9 @@ let update (msg: Msg) (model: Model) =
         { model with
               letters = Map.empty
               message = txt },
-        [fun dispatch ->
-            startStream txt dispatch |> Stream |> dispatch]
-
-    | Stream stream -> { model with stream = Some stream }, []
+        [fun (update, dispatch) ->
+            let stream = startStream txt dispatch
+            update (fun m -> { m with stream = Some stream })]
 
 let init msg =
     { letters = Map.empty

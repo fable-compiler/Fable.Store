@@ -5,7 +5,7 @@ open System
 
 type Update<'Value> = ('Value -> 'Value) -> unit
 type Dispatch<'Msg> = 'Msg -> unit
-type Cmd<'Msg> = (Dispatch<'Msg> -> unit) list
+type Cmd<'Value, 'Msg> = ((Update<'Value> * Dispatch<'Msg>) -> unit) list
 
 type IStore<'Value> =
     inherit IDisposable
@@ -13,8 +13,8 @@ type IStore<'Value> =
     abstract Update: f:('Value -> 'Value) -> unit
 
 module internal Helpers =
-    type CmdHandler<'Msg>(handler, ?dispose) =
-        member _.Handle(cmd: Cmd<'Msg>): unit = handler cmd
+    type CmdHandler<'Value, 'Msg>(handler, ?dispose) =
+        member _.Handle(cmd: Cmd<'Value, 'Msg>): unit = handler cmd
         member _.Dispose() = match dispose with Some d -> d () | None -> ()
         interface IDisposable with
             member this.Dispose() = this.Dispose()
@@ -29,21 +29,23 @@ module internal Helpers =
     [<Emit("$0 === $1")>]
     let fastEquals (x: 'T) (y: 'T): bool = jsNative
 
-    let cmdHandler (dispatch: 'Msg -> unit): CmdHandler<'Msg> =
-        new CmdHandler<_>(List.iter (fun cmd -> JS.setTimeout (fun _ -> cmd dispatch) 0 |> ignore))
+    let cmdHandler (update: Update<'Value>) (dispatch: 'Msg -> unit): CmdHandler<'Value, 'Msg> =
+        new CmdHandler<_, _>(List.iter (fun cmd ->
+            JS.setTimeout (fun _ -> cmd (update, dispatch)) 0 |> ignore))
 #else
     let fastEquals (x: 'T) (y: 'T): bool = Unchecked.equals x y
 
-    let cmdHandler (dispatch: 'Msg -> unit): CmdHandler<'Msg> =
+    let cmdHandler (update: Update<'Value>) (dispatch: 'Msg -> unit): CmdHandler<'Value, 'Msg> =
         let cts = new Threading.CancellationTokenSource()
 
         let mb = MailboxProcessor.Start(fun inbox -> async {
             while true do
-                let! msg = inbox.Receive()
-                dispatch msg
+                match! inbox.Receive() with
+                | Choice1Of2 updater -> update updater
+                | Choice2Of2 msg -> dispatch msg
         }, cts.Token)
 
-        new CmdHandler<_>(List.iter (fun cmd -> cmd mb.Post), fun _ -> cts.Cancel())
+        new CmdHandler<_,_>(List.iter (fun cmd -> cmd ((Choice1Of2 >> mb.Post), (Choice2Of2 >> mb.Post))), fun _ -> cts.Cancel())
 #endif
 
 type Store<'Value>(initValue: 'Value,  ?dispose: 'Value -> unit) =
@@ -89,7 +91,7 @@ let subscribeImmediate (cb: 'Value -> unit) (obs: IObservable<'Value>) =
         match initValue with
         | None -> initValue <- Some v
         | Some _ -> cb v)
-    
+
     match initValue with
     | None -> failwith "Observable doesn't report value immediately upon subscription"
     | Some v -> v, disp
@@ -111,13 +113,13 @@ let private makeCons i d =
 let make (init: 'Props -> 'Value) (dispose: 'Value -> unit) (props: 'Props): IStore<'Value> =
     makeWithCons init dispose makeCons props
 
-let makeElmishWithCons (init: 'Props -> 'Value * Cmd<'Msg>)
-                       (update: 'Msg -> 'Value -> 'Value * Cmd<'Msg>)
+let makeElmishWithCons (init: 'Props -> 'Value * Cmd<'Value, 'Msg>)
+                       (update: 'Msg -> 'Value -> 'Value * Cmd<'Value, 'Msg>)
                        (dispose: 'Value -> unit)
                        (cons: StoreCons<'Value, 'Store>)
                        (props: 'Props): 'Store * Dispatch<'Msg> =
 
-    let mutable _cmdHandler = Unchecked.defaultof<Helpers.CmdHandler<'Msg>>
+    let mutable _cmdHandler = Unchecked.defaultof<Helpers.CmdHandler<'Value, 'Msg>>
 
     let initValue, initCmd = init props
 
@@ -133,13 +135,13 @@ let makeElmishWithCons (init: 'Props -> 'Value * Cmd<'Msg>)
             model)
         _cmdHandler.Handle _cmds
 
-    _cmdHandler <- Helpers.cmdHandler dispatch
+    _cmdHandler <- Helpers.cmdHandler storeUpdate dispatch
     _cmdHandler.Handle initCmd
 
     store, dispatch
 
-let makeElmish (init: 'Props -> 'Value * Cmd<'Msg>)
-               (update: 'Msg -> 'Value -> 'Value * Cmd<'Msg>)
+let makeElmish (init: 'Props -> 'Value * Cmd<'Value, 'Msg>)
+               (update: 'Msg -> 'Value -> 'Value * Cmd<'Value, 'Msg>)
                (dispose: 'Value -> unit)
                (props: 'Props): IStore<'Value> * Dispatch<'Msg> =
 
