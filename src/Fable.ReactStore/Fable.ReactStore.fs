@@ -18,7 +18,8 @@ let private useEffect(f: unit -> Dispose, deps: obj[]): unit = jsNative
 [<ImportMember("react")>]
 let private useRef(v: 'Value): ReactRef<'Value> = jsNative
 
-let private useStateWithDisposable (f) =
+
+let inline private useStateWithDisposable (f) =
     let _disp = useRef Unchecked.defaultof<IDisposable>
     let _setState = useRef Unchecked.defaultof<('Value -> unit) option>
 
@@ -51,7 +52,7 @@ let useStoreLazy (init: unit -> Store.IStore<'Value>): 'Value * Store.Update<'Va
 
     state, fun f -> _store.current.Update(f)
 
-let useElmishStore (init: 'Props -> 'Value * Store.Cmd<'Value, 'Msg>)
+let inline useElmishStore (init: 'Props -> 'Value * Store.Cmd<'Value, 'Msg>)
                    (update: 'Msg -> 'Value -> 'Value * Store.Cmd<'Value, 'Msg>)
                    (dispose: 'Value -> unit)
                    (props: 'Props): 'Value * Store.Dispatch<'Msg> =

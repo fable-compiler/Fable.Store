@@ -3,7 +3,9 @@ module TimeFliesElmish
 open System
 open Fable
 open Fable.Core
+open Fable.Core.JsInterop
 open Fable.Reaction
+open Fable.SimpleHttp
 open FSharp.Control
 open Browser
 
@@ -12,13 +14,25 @@ module Cmd =
 
     let ofMsg msg: Cmd<'Value, 'Msg> = [ fun (_, d) -> d msg ]
 
-    let ofAsync (action: _ -> Async<'Msg>): Cmd<'Value, 'Msg> =
-        [ fun (_, dispatch) ->
+    // let ofAsync (action: _ -> Async<'Msg>): Cmd<'Value, 'Msg> =
+    //     [ fun (_, dispatch) ->
+    //         async {
+    //             let! msg = action dispatch
+    //             dispatch msg
+    //         }
+    //         |> Async.StartImmediate ]
+
+    let ofAsyncUpdate (action: Async<'Value->'Value>) (onError: exn -> 'Msg): Cmd<'Value, 'Msg> = [
+        fun (update, dispatch) ->
             async {
-                let! msg = action dispatch
-                dispatch msg
-            }
-            |> Async.StartImmediate ]
+                try
+                    let! f = action
+                    update f
+                with exn ->
+                    onError exn |> dispatch
+            } |> Async.StartImmediate
+    ]
+
 
 type Letter = { char: char; x: int; y: int }
 
@@ -28,11 +42,15 @@ type Model =
       second: float
       count: int
       message: string
+      quote: string
+      isLoading: bool
       stream: IDisposable option }
 
 type Msg =
     | Letter of index: int * char: char * x: int * y: int
     | Message of string
+    | GetTodayQuote
+    | OnError of exn
 
 let getOffset (element: Browser.Types.Element) =
     let doc = element.ownerDocument
@@ -89,16 +107,68 @@ let update (msg: Msg) (model: Model) =
             let stream = startStream txt dispatch
             update (fun m -> { m with stream = Some stream })]
 
+    | GetTodayQuote ->
+        let getQuote = async {
+            let! response =
+                Http.request "https://quotes.rest/qod.json?category=inspire"
+                |> Http.send
+
+            return
+                match response.content with
+                | ResponseContent.Text res ->
+                    let res = JS.JSON.parse(res)
+                    fun m -> { m with isLoading = false
+                                      quote = res?contents?quotes?(0)?quote }
+                | _ ->
+                    failwith "Cannot read response"
+        }
+
+        { model with isLoading = true },
+        Cmd.ofAsyncUpdate getQuote OnError
+
+    | OnError exn ->
+        console.error(exn)
+        { model with isLoading = false }, []
+
 let init msg =
     { letters = Map.empty
       count = 0
       second = 0.
       fps = 0
       message = msg
+      quote = ""
+      isLoading = false
       stream = None },
     Cmd.ofMsg (Message msg)
 
 open Feliz
+
+let theySaidSoAttribution() =
+    Html.span [
+        prop.style [
+            style.zIndex 50
+            style.fontSize(length.em 0.9)
+            style.fontWeight.bold
+        ]
+        prop.children [
+            Html.img [
+                prop.src "https://theysaidso.com/branding/theysaidso.png"
+                prop.height 20
+                prop.width 20
+                prop.alt "theysaidso.com"
+            ]
+            Html.a [
+                prop.href "https://theysaidso.com"
+                prop.title "Powered by quotes from theysaidso.com"
+                prop.style [
+                    style.color "#ccc"
+                    style.marginLeft 4
+                    style.verticalAlign.middle
+                ]
+                prop.text "They Said So®"
+            ]
+        ]
+    ]
 
 [<ReactComponent>]
 let TimeFliesElmish (text: string) =
@@ -127,5 +197,14 @@ let TimeFliesElmish (text: string) =
                     Message (ev.target :?> Types.HTMLInputElement).value |> dispatch)
             ]
             Html.p ("fps: " + string model.fps)
+            Html.button [
+                prop.disabled model.isLoading
+                prop.children [
+                    Html.text "Get today's quote from "
+                    theySaidSoAttribution()
+                ]
+                prop.onClick (fun _ -> dispatch GetTodayQuote)
+            ]
+            Html.p (if model.isLoading then "Loading..." else model.quote)
         ]
     ]
