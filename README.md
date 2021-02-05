@@ -1,6 +1,6 @@
 # Fable.Store
 
-"Did I read it correctly? Is the title of the Readme different than the name of the repository?" It's confusing, I know, sorry for that! This repository was born to create bindings to write Svelte apps with Fable, but has evolved into providing stores à-la-Svelte that can also be used with other UI rendering mechanisms like React, and also in non-Fable environments like dotnet console apps, [Fabulous](https://fsprojects.github.io/Fabulous/) or [Bolero](https://fsbolero.io/).
+This repository was originally born as bindings to write Svelte apps with Fable, but has evolved into providing stores à-la-Svelte that can also be used with other UI rendering mechanisms like React, and also in non-Fable environments like dotnet console apps, [Fabulous](https://fsprojects.github.io/Fabulous/) or [Bolero](https://fsbolero.io/).
 
 ## What's a store?
 
