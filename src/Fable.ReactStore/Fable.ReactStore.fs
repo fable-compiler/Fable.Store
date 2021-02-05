@@ -2,7 +2,9 @@
 module ReactStore
 
 open System
+open Fable
 open Fable.Core
+open ElmishStore
 
 type Dispose = delegate of unit -> unit
 
@@ -19,7 +21,7 @@ let private useEffect(f: unit -> Dispose, deps: obj[]): unit = jsNative
 let private useRef(v: 'Value): ReactRef<'Value> = jsNative
 
 
-let inline private useStateWithDisposable (f) =
+let private useStateWithDisposable (f) =
     let _disp = useRef Unchecked.defaultof<IDisposable>
     let _setState = useRef Unchecked.defaultof<('Value -> unit) option>
 
@@ -42,7 +44,7 @@ let useObservable (obs: IObservable<'Value>) =
         obs |> Store.subscribeImmediate(fun v ->
             setState.current |> Option.iter (fun f -> f v)))
 
-let useStoreLazy (init: unit -> Store.IStore<'Value>): 'Value * Store.Update<'Value> =
+let useStoreLazy (init: unit -> IStore<'Value>): 'Value * StoreUpdate<'Value> =
     let _store = useRef Unchecked.defaultof<_>
 
     let state = useStateWithDisposable (fun setState ->
@@ -52,10 +54,10 @@ let useStoreLazy (init: unit -> Store.IStore<'Value>): 'Value * Store.Update<'Va
 
     state, fun f -> _store.current.Update(f)
 
-let inline useElmishStore (init: 'Props -> 'Value * Store.Cmd<'Value, 'Msg>)
-                   (update: 'Msg -> 'Value -> 'Value * Store.Cmd<'Value, 'Msg>)
+let useElmishStore (init: 'Props -> 'Value * Cmd<'Value, 'Msg>)
+                   (update: 'Msg -> 'Value -> 'Value * Cmd<'Value, 'Msg>)
                    (dispose: 'Value -> unit)
-                   (props: 'Props): 'Value * Store.Dispatch<'Msg> =
+                   (props: 'Props): 'Value * Dispatch<'Msg> =
 
     let _dispatch = useRef Unchecked.defaultof<_>
 
@@ -70,7 +72,7 @@ let inline useElmishStore (init: 'Props -> 'Value * Store.Cmd<'Value, 'Msg>)
 let useElmishStoreSimple (init: 'Props -> 'Value)
                          (update: 'Msg -> 'Value -> 'Value)
                          (dispose: 'Value -> unit)
-                         (props: 'Props): 'Value * Store.Dispatch<'Msg> =
+                         (props: 'Props): 'Value * Dispatch<'Msg> =
 
     let init p = init p, []
     let update m v = update m v, []

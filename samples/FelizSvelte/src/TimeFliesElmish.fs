@@ -7,32 +7,8 @@ open Fable.Core.JsInterop
 open Fable.Reaction
 open Fable.SimpleHttp
 open FSharp.Control
+open ElmishStore
 open Browser
-
-module Cmd =
-    type Cmd<'Value, 'Msg> = Store.Cmd<'Value, 'Msg>
-
-    let ofMsg msg: Cmd<'Value, 'Msg> = [ fun (_, d) -> d msg ]
-
-    // let ofAsync (action: _ -> Async<'Msg>): Cmd<'Value, 'Msg> =
-    //     [ fun (_, dispatch) ->
-    //         async {
-    //             let! msg = action dispatch
-    //             dispatch msg
-    //         }
-    //         |> Async.StartImmediate ]
-
-    let ofAsyncUpdate (action: Async<'Value->'Value>) (onError: exn -> 'Msg): Cmd<'Value, 'Msg> = [
-        fun (update, dispatch) ->
-            async {
-                try
-                    let! f = action
-                    update f
-                with exn ->
-                    onError exn |> dispatch
-            } |> Async.StartImmediate
-    ]
-
 
 type Letter = { char: char; x: int; y: int }
 
@@ -85,6 +61,20 @@ let startStream (text: string) (dispatch: Msg -> unit) =
 let disposeStream (model: Model) =
     model.stream |> Option.iter (fun d -> d.Dispose())
 
+let getQuote () = async {
+    let! response =
+        Http.request "https://quotes.rest/qod.json?category=inspire"
+        |> Http.send
+
+    return
+        match response.content with
+        | ResponseContent.Text res ->
+            let res = JS.JSON.parse(res)
+            res?contents?quotes?(0)?quote: string
+        | _ ->
+            failwith "Cannot read response"
+}
+
 let update (msg: Msg) (model: Model) =
     match msg with
     | Letter (i, c, x, y) ->
@@ -103,28 +93,16 @@ let update (msg: Msg) (model: Model) =
         { model with
               letters = Map.empty
               message = txt },
-        [fun (update, dispatch) ->
+        [fun update dispatch ->
             let stream = startStream txt dispatch
             update (fun m -> { m with stream = Some stream })]
 
     | GetTodayQuote ->
-        let getQuote = async {
-            let! response =
-                Http.request "https://quotes.rest/qod.json?category=inspire"
-                |> Http.send
-
-            return
-                match response.content with
-                | ResponseContent.Text res ->
-                    let res = JS.JSON.parse(res)
-                    fun m -> { m with isLoading = false
-                                      quote = res?contents?quotes?(0)?quote }
-                | _ ->
-                    failwith "Cannot read response"
-        }
+        let onSuccess quote m =
+            { m with isLoading = false; quote = quote }
 
         { model with isLoading = true },
-        Cmd.ofAsyncUpdate getQuote OnError
+        Cmd.OfAsync.update getQuote () onSuccess OnError
 
     | OnError exn ->
         console.error(exn)
@@ -139,7 +117,7 @@ let init msg =
       quote = ""
       isLoading = false
       stream = None },
-    Cmd.ofMsg (Message msg)
+    Cmd.OfFunc.result (Message msg)
 
 open Feliz
 
