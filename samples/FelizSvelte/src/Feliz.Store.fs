@@ -12,15 +12,15 @@ type Store<'Model>(init: unit -> 'Model, dispose: 'Model -> unit) =
     let mutable uid = 0
     let mutable model = Unchecked.defaultof<_>
     let subscribers = Collections.Generic.Dictionary<_, IObserver<'Model>>()
-    
+
     member _.Update(f: 'Model->'Model) =
         if subscribers.Count > 0 then
             let newModel = f model
             if not (obj.ReferenceEquals(model, newModel)) then
                 model <- newModel
                 subscribers.Values |> Seq.iter (fun s -> s.OnNext(model))
-    
-    member _.SubscribeImmediate(observer: IObserver<'Model>): 'Model * IDisposable = 
+
+    member _.SubscribeImmediate(observer: IObserver<'Model>): 'Model * IDisposable =
         if subscribers.Count = 0 then
             model <- init()
         let id = uid
@@ -31,7 +31,7 @@ type Store<'Model>(init: unit -> 'Model, dispose: 'Model -> unit) =
                 dispose model
                 model <- Unchecked.defaultof<_>)
 
-    member this.SubscribeImmediate(observer: 'Model -> unit): 'Model * IDisposable = 
+    member this.SubscribeImmediate(observer: 'Model -> unit): 'Model * IDisposable =
         let observer =
             { new IObserver<_> with
                 member _.OnNext(value) = observer value
@@ -40,7 +40,7 @@ type Store<'Model>(init: unit -> 'Model, dispose: 'Model -> unit) =
         this.SubscribeImmediate(observer)
 
     interface IObservable<'Model> with
-        member this.Subscribe(observer: IObserver<'Model>): IDisposable = 
+        member this.Subscribe(observer: IObserver<'Model>): IDisposable =
             this.SubscribeImmediate(observer) |> snd
 
 type DispatchStore<'Msg, 'Model>(init: unit -> 'Model, dispose: 'Model -> unit, dispatch: 'Msg -> unit) =
@@ -49,7 +49,7 @@ type DispatchStore<'Msg, 'Model>(init: unit -> 'Model, dispose: 'Model -> unit, 
 
 let useStore (store: Store<'Model>) =
     let mutable _disp: IDisposable = Unchecked.defaultof<_>
-    let _setState: ('Model->unit) ref = ref Unchecked.defaultof<_>    
+    let _setState: ('Model->unit) ref = ref Unchecked.defaultof<_>
     let state, setState = React.useState(fun () ->
         let model, disp = store.SubscribeImmediate(fun v -> _setState.contents v)
         _disp <- disp
@@ -61,7 +61,7 @@ let useStore (store: Store<'Model>) =
 
 let useDispatchStore (store: DispatchStore<'Msg, 'Model>) =
     let mutable _disp: IDisposable = Unchecked.defaultof<_>
-    let _setState: ('Model->unit) ref = ref Unchecked.defaultof<_>    
+    let _setState: ('Model->unit) ref = ref Unchecked.defaultof<_>
     let state, setState = React.useState(fun () ->
         let model, disp = store.SubscribeImmediate(fun v -> _setState.contents v)
         _disp <- disp
@@ -71,11 +71,11 @@ let useDispatchStore (store: DispatchStore<'Msg, 'Model>) =
         disposable(fun () -> _disp.Dispose())), [||])
     state, store.Dispatch
 
-type Cmd<'Msg> = (('Msg -> unit) -> unit) list
+type Cmd<'Value, 'Msg> = (('Msg -> unit) -> unit) list
 
 let makeElmishStore
-        (init: unit -> 'Model * Cmd<'Msg>)
-        (update: 'Msg -> 'Model -> 'Model * Cmd<'Msg>)
+        (init: unit -> 'Model * Cmd<'Value, 'Msg>)
+        (update: 'Msg -> 'Model -> 'Model * Cmd<'Value, 'Msg>)
         (dispose: 'Model -> unit) =
 
     let mutable dispatch = Unchecked.defaultof<_>

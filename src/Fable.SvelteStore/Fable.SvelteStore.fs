@@ -2,7 +2,9 @@
 module SvelteStore
 
 open System
+open Fable
 open Fable.Core
+open ElmishStore
 
 type Subscribe<'Value> = 'Value -> unit
 type Dispose = delegate of unit -> unit
@@ -31,7 +33,7 @@ let private storeCons value dispose =
             model)))
     store, store.update
 
-let make init dispose props: IWritableStore<'Model> =    
+let make init dispose props: IWritableStore<'Model> =
     Store.makeWithCons init dispose storeCons props
 
 let makeRec (init: IWritableStore<'Model> -> 'Props -> 'Model * IDisposable) =
@@ -43,17 +45,17 @@ let makeRec (init: IWritableStore<'Model> -> 'Props -> 'Model * IDisposable) =
             Dispose(fun () -> disp.Dispose()))
         store
 
-let makeElmish (init: 'Props -> 'Value * Store.Cmd<'Msg>)
-               (update: 'Msg -> 'Value -> 'Value * Store.Cmd<'Msg>)
+let makeElmish (init: 'Props -> 'Value * Cmd<'Value, 'Msg>)
+               (update: 'Msg -> 'Value -> 'Value * Cmd<'Value, 'Msg>)
                (dispose: 'Value -> unit)
-               (props: 'Props): IWritableStore<'Value> * Store.Dispatch<'Msg> =
+               (props: 'Props): IWritableStore<'Value> * Dispatch<'Msg> =
 
     Store.makeElmishWithCons init update dispose storeCons props
 
 let makeElmishSimple (init: 'Props -> 'Value)
                      (update: 'Msg -> 'Value -> 'Value)
                      (dispose: 'Value -> unit)
-                     (props: 'Props): IWritableStore<'Value> * Store.Dispatch<'Msg> =
+                     (props: 'Props): IWritableStore<'Value> * Dispatch<'Msg> =
 
     let init p = init p, []
     let update m v = update m v, []
@@ -66,4 +68,3 @@ let map (f: 'a -> 'b) (store: IReadableStore<'a>): IReadableStore<'b> =
     makeReadableStore Unchecked.defaultof<_> (fun set ->
         let disp = store.subscribe(f >> set)
         Dispose(fun () -> disp.Invoke()))
-        

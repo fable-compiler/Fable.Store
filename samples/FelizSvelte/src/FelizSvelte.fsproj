@@ -15,15 +15,15 @@
 
   <ItemGroup>
     <PackageReference Include="Fable.Browser.WebStorage" Version="1.0.0" />
-    <PackageReference Include="Fable.Reaction" Version="3.3.3" />
-    <PackageReference Include="Fable.ReactStore" Version="1.0.0-beta-001" />
-    <PackageReference Include="Fable.SvelteStore" Version="1.0.0-beta-002" />
+    <PackageReference Include="Fable.Reaction" Version="3.5.0" />
+    <PackageReference Include="Fable.SimpleHttp" Version="3.0.0" />
+    <PackageReference Include="Fable.ReactStore" Version="1.0.0-beta-002" />
+    <PackageReference Include="Fable.SvelteStore" Version="1.0.0-beta-003" />
     <PackageReference Include="Feliz.Router" Version="3.5.0" />
     <PackageReference Include="Feliz.Svelte" Version="0.4.0" />
-    <PackageReference Update="FSharp.Core" Version="4.7.2" />
   </ItemGroup>
 
-  <!-- <ItemGroup>  
+  <!-- <ItemGroup>
     <ProjectReference Include="..\..\..\src\Fable.SvelteStore\Fable.SvelteStore.fsproj" />
     <ProjectReference Include="..\..\..\src\Fable.ReactStore\Fable.ReactStore.fsproj" />
   </ItemGroup> -->
