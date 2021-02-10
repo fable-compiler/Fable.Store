@@ -50,6 +50,7 @@ let update (msg:Msg) (model:Model) =
         { model with entries = Array.map updateEntry model.entries }
         |> saveModel
 
+[<SveltePlugins.GenerateDeclaration>]
 let makeStore () =
   let store, dispatch = SvelteStore.makeElmishSimple init update ignore ()
   store, SvelteStore.makeDispatcher dispatch

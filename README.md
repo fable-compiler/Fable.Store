@@ -22,7 +22,7 @@ Svelte has its own mechanism to create bindings, but it allows you to use extern
 
 First, if you are using VS Code, install the "Svelte for VS Code" extension which provides great tooling to work with .svelte files.
 
-In your F# project, install the `Fable.SvelteStore` dependency (`--prerelease` at the time of writing). Then from npm also install `svelte` itself and the `svelte-loader` for Webpack. All the dependencies (both .NET and JS) can be installed automatically by using [Femto](https://github.com/Zaid-Ajaj/Femto). 
+In your F# project, install the `Fable.SvelteStore` dependency (`--prerelease` at the time of writing). Then from npm also install `svelte` itself and the `svelte-loader` for Webpack. All the dependencies (both .NET and JS) can be installed automatically by using [Femto](https://github.com/Zaid-Ajaj/Femto).
 
 In a Svelte-only app, you'll likely have a main .js file [like this one](https://github.com/fable-compiler/Fable.Svelte/blob/18325893c06475bc1f1d13f45ce73386332f6ac9/samples/App/src/main.js) pointing to the root Svelte component as the entry point in your [Webpack config](https://github.com/fable-compiler/Fable.Svelte/blob/18325893c06475bc1f1d13f45ce73386332f6ac9/samples/App/webpack.config.js).
 
@@ -43,7 +43,7 @@ let makeStore props =
 
 <script>
 	import { makeStore } from "./TodoMVC.fs.js";
-    const [store, dispatch] = makeStore(props);    
+    const [store, dispatch] = makeStore(props);
     // ...
 </script>
 ```
@@ -104,7 +104,7 @@ export function makeStore(): [Readable<{
 }]
 ```
 
-> At the moment, the declaration has to be written by hand, but in the future we may look at generating it automatically with a plugin.
+> You can generate the `.d.ts` automatically by decorating the `makeStore` function with the `SveltePlugins.GenerateDeclaration` attribute. Just be aware the plugin may not handle complex cases.
 
 With this, you can use Typescript in your .svelte file or just the `// @ts-check` declaration to get type checking even in Javascript! Please note that in this case, for Typescript to correctly pick the declaration, you need to omit the extension from the import path.
 
