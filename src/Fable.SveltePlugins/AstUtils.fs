@@ -6,6 +6,15 @@ open System
 open System.Linq
 open System.Text.RegularExpressions
 
+let (|NestedLambdaType|_|) e =
+    let rec nestedLambda acc = function
+        | Fable.LambdaType(arg, returnType) ->
+            nestedLambda (arg::acc) returnType
+        | returnType -> List.rev acc, returnType
+    match e with
+    | Fable.LambdaType(arg, t) -> nestedLambda [arg] t |> Some
+    | _ -> None
+
 let cleanFullDisplayName str =
     Regex.Replace(str, @"`\d+", "").Replace(".", "_")
 

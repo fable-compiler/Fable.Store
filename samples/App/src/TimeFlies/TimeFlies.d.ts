@@ -1,12 +1,13 @@
 import { Readable } from "svelte/store";
 
-export function makeStore(txt: string): Readable<{
+export function makeStore(a0: string): Readable<{
     letters: Iterable<[number, {
-        char: string,
+        character: string,
         x: number,
-        y: number,        
-    }]>
+        y: number,
+    }]>,
     fps: number,
     second: number,
     count: number,
+    text: string,
 }>;

@@ -5,7 +5,7 @@ open Fable.Reaction
 open FSharp.Control
 open Browser
 
-type Letter = { char: string; x: int; y: int }
+type Letter = { character: string; x: int; y: int }
 
 type Model =
     { letters: Map<int, Letter>
@@ -57,13 +57,14 @@ let startStream (update: Model -> unit) (model: Model) =
                 DateTimeOffset.Now.ToUnixTimeSeconds() |> float
 
             { model with
-                  letters = Map.add i { char = c; x = x; y = y } model.letters
+                  letters = Map.add i { character = c; x = x; y = y } model.letters
                   second = second
                   fps = if second > model.second then model.count else model.fps
                   count = if second > model.second then 0 else model.count + 1 })
         model
     |> Observable.subscribe update
 
+[<SveltePlugins.GenerateDeclaration>]
 let makeStore = SvelteStore.makeRec <| fun store (txt: string) ->
     let update m = store.update(fun _ -> m)
     let v = init txt

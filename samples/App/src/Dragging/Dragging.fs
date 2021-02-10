@@ -23,7 +23,7 @@ let rec draggingLoop (stream: IObservable<_>) = async {
 
     // If the left button is up, we don't do anything so we leave the dragging loop
     | MouseUp -> ()
-    
+
     // Stay within the loop without changing the state
     | _ -> return! draggingLoop stream
 }
@@ -41,6 +41,7 @@ let rec waitingLoop (stream: IObservable<_>) = async {
     return! waitingLoop stream
 }
 
+[<SveltePlugins.GenerateDeclaration>]
 let makeStore() =
     let stream = SingleObservable()
     let tcs = new Threading.CancellationTokenSource()
@@ -50,7 +51,7 @@ let makeStore() =
         { position=(0.,50.); offset=(0.,0.) }
 
     let dispose _ = tcs.Cancel()
-    let store = SvelteStore.make init dispose ()    
+    let store = SvelteStore.make init dispose ()
     let dispatch msg = stream.Trigger(msg, store.update)
 
     store, SvelteStore.makeDispatcher dispatch

@@ -8,37 +8,38 @@ open ElmishStore
 
 type Subscribe<'Value> = 'Value -> unit
 type Dispose = delegate of unit -> unit
+type IDispatcher<'Msg> = interface end
 
-type IReadableStore<'Value> =
+type IReadable<'Value> =
     abstract subscribe: Subscribe<'Value> -> Dispose
 
-type IWritableStore<'Value> =
-    inherit IReadableStore<'Value>
+type IWritable<'Value> =
+    inherit IReadable<'Value>
     abstract update: ('Value -> 'Value) -> unit
     abstract set: 'Value -> unit
 
-type Initialize<'Props, 'Value> = delegate of 'Props -> IReadableStore<'Value>
+type Initialize<'Props, 'Value> = delegate of 'Props -> IReadable<'Value>
 
 [<Import("readable", from="svelte/store")>]
-let private makeReadableStore (init: 'Value) (start: ('Value -> unit) -> Dispose): IReadableStore<'Value> = jsNative
+let private makeReadableStore (init: 'Value) (start: ('Value -> unit) -> Dispose): IReadable<'Value> = jsNative
 
 [<Import("writable", from="svelte/store")>]
-let private makeWritableStore (init: 'Value) (start: ('Value -> unit) -> Dispose): IWritableStore<'Value> = jsNative
+let private makeWritableStore (init: 'Value) (start: ('Value -> unit) -> Dispose): IWritable<'Value> = jsNative
 
 let private storeCons value dispose =
-    let mutable store = Unchecked.defaultof<IWritableStore<'Value>>
+    let mutable store = Unchecked.defaultof<IWritable<'Value>>
     store <- makeWritableStore value (fun _set ->
         Dispose(fun () -> store.update(fun model ->
             dispose model
             model)))
     store, store.update
 
-let make init dispose props: IWritableStore<'Model> =
+let make init dispose props: IWritable<'Model> =
     Store.makeWithCons init dispose storeCons props
 
-let makeRec (init: IWritableStore<'Model> -> 'Props -> 'Model * IDisposable) =
+let makeRec (init: IWritable<'Model> -> 'Props -> 'Model * IDisposable) =
     fun (props: 'Props) ->
-        let mutable store = Unchecked.defaultof<IWritableStore<'Model>>
+        let mutable store = Unchecked.defaultof<IWritable<'Model>>
         store <- makeWritableStore Unchecked.defaultof<'Model> (fun set ->
             let v, disp = init store props
             set v
@@ -48,23 +49,23 @@ let makeRec (init: IWritableStore<'Model> -> 'Props -> 'Model * IDisposable) =
 let makeElmish (init: 'Props -> 'Value * Cmd<'Value, 'Msg>)
                (update: 'Msg -> 'Value -> 'Value * Cmd<'Value, 'Msg>)
                (dispose: 'Value -> unit)
-               (props: 'Props): IWritableStore<'Value> * Dispatch<'Msg> =
+               (props: 'Props): IWritable<'Value> * Dispatch<'Msg> =
 
     Store.makeElmishWithCons init update dispose storeCons props
 
 let makeElmishSimple (init: 'Props -> 'Value)
                      (update: 'Msg -> 'Value -> 'Value)
                      (dispose: 'Value -> unit)
-                     (props: 'Props): IWritableStore<'Value> * Dispatch<'Msg> =
+                     (props: 'Props): IWritable<'Value> * Dispatch<'Msg> =
 
     let init p = init p, []
     let update m v = update m v, []
     makeElmish init update dispose props
 
-[<Fable.SveltePlugins.Dispatcher>]
-let makeDispatcher (dispatch: 'Msg -> unit): obj = failwith "never"
+[<SveltePlugins.Dispatcher>]
+let makeDispatcher (dispatch: 'Msg -> unit): IDispatcher<'Msg> = failwith "never"
 
-let map (f: 'a -> 'b) (store: IReadableStore<'a>): IReadableStore<'b> =
+let map (f: 'a -> 'b) (store: IReadable<'a>): IReadable<'b> =
     makeReadableStore Unchecked.defaultof<_> (fun set ->
         let disp = store.subscribe(f >> set)
         Dispose(fun () -> disp.Invoke()))
