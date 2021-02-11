@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Version>1.0.0</Version>
-    <PackageVersion>1.0.0-beta-004</PackageVersion>
+    <PackageVersion>1.0.0-beta-005</PackageVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
@@ -12,7 +12,7 @@
     </NpmDependencies>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="*.fsproj; *.fs; *.js;" PackagePath="fable\" />
+    <Content Include="*.fsproj; *.fs;" PackagePath="fable\" />
     <Compile Include="Fable.SvelteStore.fs" />
   </ItemGroup>
   <ItemGroup>
