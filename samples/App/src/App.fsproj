@@ -13,7 +13,7 @@
     <PackageReference Include="Fable.Browser.WebStorage" Version="1.0.0" />
     <PackageReference Include="Fable.Core" Version="3.2.3" />
     <PackageReference Include="Fable.Reaction" Version="3.5.0" />
-    <PackageReference Include="Fable.SvelteStore" Version="1.0.0-beta-004" />
+    <PackageReference Include="Fable.SvelteStore" Version="1.0.0-beta-006" />
   </ItemGroup>
   <!-- <ItemGroup>
     <ProjectReference Include="..\..\..\src\Fable.SvelteStore\Fable.SvelteStore.fsproj" />

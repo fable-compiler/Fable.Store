@@ -2,7 +2,7 @@ import { Readable } from "svelte/store";
 
 export function makeStore(a0: string): Readable<{
     letters: Iterable<[number, {
-        character: string,
+        char: string,
         x: number,
         y: number,
     }]>,

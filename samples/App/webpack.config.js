@@ -11,7 +11,7 @@ module.exports = {
 		alias: {
 			svelte: path.resolve('node_modules', 'svelte')
 		},
-		extensions: ['.fs.js', '.mjs', '.js', '.svelte'],
+		extensions: ['.mjs', '.js', '.svelte'],
 		mainFields: ['svelte', 'browser', 'module', 'main']
 	},
 	output: {
@@ -23,10 +23,10 @@ module.exports = {
     //     public: '/',
 	// 	   contentBase: __dirname + '/public',
     //     port: 8080,
-    //     host: '0.0.0.0',		
+    //     host: '0.0.0.0',
     //     // hot: true,
-    //     // inline: true        
-    // },	
+    //     // inline: true
+    // },
 	module: {
 		rules: [
 			{

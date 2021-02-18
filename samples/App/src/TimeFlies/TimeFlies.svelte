@@ -1,6 +1,6 @@
 <script>
 	// @ts-check
-	import { makeStore } from "./TimeFlies";
+	import { makeStore } from "./TimeFlies.fs.js";
 	export let text = "Time flies like an arrow";
 	let store = makeStore(text)
 </script>

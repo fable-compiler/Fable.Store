@@ -1,3 +1,7 @@
+### 1.0.0-beta-006
+
+* Bump SveltePlugins version
+
 ### 1.0.0-beta-005
 
 * Fix #7: Remove .js files from package

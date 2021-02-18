@@ -1,6 +1,6 @@
 <script>
 	// @ts-check
-	import { makeStore } from "./Dragging";
+	import { makeStore } from "./Dragging.fs.js";
 
 	let [store, dispatch] = makeStore();
 

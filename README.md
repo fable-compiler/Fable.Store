@@ -90,7 +90,7 @@ Now we can easily send messages to F# from Svelte:
 The dispatcher is still not super useful unless we have some help from the IDE to give us a warning when we make a misspelling in JS. To solve this we can use a Typescript `.d.ts` declaration file like this one:
 
 ```typescript
-// Dragging.d.ts
+// Dragging.fs.d.ts
 
 import { Readable } from "svelte/store";
 
@@ -106,25 +106,18 @@ export function makeStore(): [Readable<{
 
 > You can generate the `.d.ts` automatically by decorating the `makeStore` function with the `SveltePlugins.GenerateDeclaration` attribute. Just be aware the plugin may not handle complex cases.
 
-With this, you can use Typescript in your .svelte file or just the `// @ts-check` declaration to get type checking even in Javascript! Please note that in this case, for Typescript to correctly pick the declaration, you need to omit the extension from the import path.
+With this, you can use Typescript in your .svelte file or just the `// @ts-check` declaration to get type checking even in Javascript!
 
 ```js
 // Dragging.svelte
 
-import { makeStore } from "./Dragging";
-```
+// @ts-check
+import { makeStore } from "./Dragging.fs.js";
 
-Now just add `.fs.js` to Webpack extension resolutions so the bundler knows what file to pick in case of ambiguity:
+let [store, dispatch] = makeStore();
 
-```js
-// webpack.config.js
-module.exports = {
-	resolve: {
-        extensions: ['.fs.js', '.mjs', '.js', '.svelte'],
-        // ...
-    },
-    // ...
-}
+// This gives an error because numeric arguments are expected
+dispatch.mouseDown("foo")
 ```
 
 ## Try it out!

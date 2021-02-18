@@ -139,7 +139,8 @@ type GenerateDeclarationAttribute() =
                 $"Readable<{Helper.PrintType(h, printer, indent, t)}>"
             | fullname, _ -> $"/* {fullname} */ any"
 
-        let path = Regex.Replace(h.CurrentFile, "\.fs$", ".d.ts")
+        let typesExtension = Regex.Replace(h.Options.FileExtension, @"\.js$", ".d.ts")
+        let path = Regex.Replace(h.CurrentFile, @"\.fs$", typesExtension)
 
         let args, returnType =
             if decl.Info.IsValue then

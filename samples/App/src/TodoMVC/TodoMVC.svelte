@@ -1,6 +1,6 @@
 <script>
 	// @ts-check
-	import { makeStore } from "./TodoMVC";
+	import { makeStore } from "./TodoMVC.fs.js";
 	import { quintOut } from "svelte/easing";
 	import { crossfade } from "svelte/transition";
 	import { flip } from "svelte/animate";
