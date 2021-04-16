@@ -88,7 +88,7 @@ type Helper =
 
 type DispatcherAttribute() =
     inherit Fable.MemberDeclarationPluginAttribute()
-    override _.FableMinimumVersion = "3.0.0"
+    override _.FableMinimumVersion = "3.1.15"
     override _.Transform(_,_,decl) = decl
     override _.TransformCall(helper, _member, expr) =
         let fail() =
@@ -139,9 +139,6 @@ type GenerateDeclarationAttribute() =
                 $"Readable<{Helper.PrintType(h, printer, indent, t)}>"
             | fullname, _ -> $"/* {fullname} */ any"
 
-        let typesExtension = Regex.Replace(h.Options.FileExtension, @"\.js$", ".d.ts")
-        let path = Regex.Replace(h.CurrentFile, @"\.fs$", typesExtension)
-
         let args, returnType =
             if decl.Info.IsValue then
                 match decl.Body.Type with
@@ -156,6 +153,7 @@ type GenerateDeclarationAttribute() =
             | [_, Fable.Unit] -> []
             | args -> args
 
+        let path = Regex.Replace(h.GetOutputPath(), @"\.js$", ".d.ts")
         let text = $"""import {{ Readable }} from "svelte/store";
 
 export function {decl.Name}{Helper.PrintFunction(h, printer, 0, args, returnType, arrow=false)};"""
