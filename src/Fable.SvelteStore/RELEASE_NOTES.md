@@ -1,3 +1,7 @@
+### 1.0.0-beta-007
+
+* Bump SveltePlugins version
+
 ### 1.0.0-beta-006
 
 * Bump SveltePlugins version
