@@ -12,7 +12,7 @@ let Dragging() = React.imported()
 
 [<ReactComponent>]
 let Index() = React.fragment [
-    Html.h1 "Feliz ❤️ Svelte"
+    Html.h1 "Feliz ❤️ Svelte (and Lit!)"
     Html.p "Easily embed Svelte components inside Feliz applications"
     Html.ul [
         Html.li [
@@ -26,6 +26,13 @@ let Index() = React.fragment [
             Html.a [
                 prop.href (Router.format "dragging")
                 prop.text "/dragging"
+            ]
+        ]
+
+        Html.li [
+            Html.a [
+                prop.href (Router.format "clock")
+                prop.text "/clock"
             ]
         ]
     ]
@@ -42,6 +49,7 @@ let Application() =
             | [ ] -> Index()
             | [ "todo" ] -> TodoMvc()
             | [ "dragging" ] -> Dragging()
+            | [ "clock" ] -> Clock.Clock()
             | _ -> Html.h1 "Not found"
         ]
     ]

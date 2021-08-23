@@ -9,6 +9,7 @@
     <Compile Include="Util.fs" />
     <Compile Include="Dragging.fs" />
     <Compile Include="TodoMVC.fs" />
+    <Compile Include="Clock.fs" />
     <Compile Include="App.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
@@ -21,6 +22,7 @@
     <PackageReference Include="Fable.SvelteStore" Version="1.0.0-beta-006" />
     <PackageReference Include="Feliz.Router" Version="3.5.0" />
     <PackageReference Include="Feliz.Svelte" Version="0.4.0" />
+    <PackageReference Include="React.Lit" Version="1.0.0-beta-001" />
   </ItemGroup>
 
   <!-- <ItemGroup>
