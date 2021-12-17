@@ -12,7 +12,7 @@ You may be thinking: "An update function? This looks like mutation, not very fun
 
 Svelte is a new way to write web apps in a declarative way without using a Virtual DOM. The best way to learn about Svelte and its merit is by checking their great [website](https://svelte.dev/) with interactive tutorials.
 
-Svelte uses HTML-like templates. If you like it but prefer an all-F# approach, check [David Dawkins](https://twitter.com/DaveDawkins) awesome work with [Fable.Sveltish](https://github.com/davedawkins/Fable.Sveltish)!
+Svelte uses HTML-like templates. If you like it but prefer an all-F# approach, check [David Dawkins](https://twitter.com/DaveDawkins) awesome work with [Sutil](https://github.com/davedawkins/Sutil)!
 
 ## How do I use F#/Fable with Svelte?
 
