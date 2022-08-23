@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+	<Content Include="*.fsproj; *.fs;" PackagePath="fable\" />
     <Compile Include="UseStore.fs" />
   </ItemGroup>
 
