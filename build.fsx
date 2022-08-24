@@ -8,6 +8,7 @@ let packages =[
     "Fable.SveltePlugins"
     "Fable.SvelteStore"
     "Fable.ReactStore"
+    "Fable.LitStore"
 ]
 
 match argsLower with
