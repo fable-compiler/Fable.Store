@@ -1,7 +1,7 @@
 ﻿module LitStore
 
-open Fable
 open Lit
+open Fable
 open System
 
 type HookContext with
