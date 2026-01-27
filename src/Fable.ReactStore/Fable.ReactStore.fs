@@ -54,6 +54,34 @@ let useStoreLazy (init: unit -> IStore<'Value>): 'Value * StoreUpdate<'Value> =
 
     state, fun f -> _store.current.Update(f)
 
+let useStore<'Model>(store: IStore<'Model>) =
+    // Create placeholder refs with temp defaults (to be replaced with real values from store)
+    let setModelRef = ref(fun (_: 'Model) -> ())
+    let subscriptionRef = ref { new IDisposable with member _.Dispose() = () }
+
+    // Ensure that store subscription is disposed when component is destroyed
+    useEffect((fun () ->
+        Dispose(fun () -> subscriptionRef.Value.Dispose()
+        )), [||])
+        
+    let model, setModel = 
+        useState(fun () ->            
+
+            // Susbscribe
+            let initialModel, subscription = 
+                Store.subscribeImmediate (fun newModel -> 
+                    setModelRef.Value newModel
+                ) store 
+
+            // Assign subscription ref (to be disposed with component)                
+            subscriptionRef.Value <- subscription
+
+            initialModel
+        )
+
+    setModelRef.Value <- setModel
+    model
+
 let useElmishStore (init: 'Props -> 'Value * Cmd<'Value, 'Msg>)
                    (update: 'Msg -> 'Value -> 'Value * Cmd<'Value, 'Msg>)
                    (dispose: 'Value -> unit)
